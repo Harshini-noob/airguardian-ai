@@ -1,0 +1,50 @@
+{
+  "1": {
+    "station_name": "Manali Industrial Area",
+    "rmse": 45.05,
+    "data_points": 727,
+    "trained_at": "2026-06-25T11:30:21.214422+00:00"
+  },
+  "2": {
+    "station_name": "Alandur",
+    "rmse": 23.38,
+    "data_points": 727,
+    "trained_at": "2026-06-25T11:30:31.359712+00:00"
+  },
+  "3": {
+    "station_name": "Velachery",
+    "rmse": 28.63,
+    "data_points": 727,
+    "trained_at": "2026-06-25T11:30:41.687753+00:00"
+  },
+  "4": {
+    "station_name": "Kodungaiyur",
+    "rmse": 45.66,
+    "data_points": 727,
+    "trained_at": "2026-06-25T11:30:52.159984+00:00"
+  },
+  "5": {
+    "station_name": "Perungudi",
+    "rmse": 18.48,
+    "data_points": 727,
+    "trained_at": "2026-06-25T11:31:06.704286+00:00"
+  },
+  "6": {
+    "station_name": "T.Nagar",
+    "rmse": 31.94,
+    "data_points": 727,
+    "trained_at": "2026-06-25T11:31:23.873973+00:00"
+  },
+  "7": {
+    "station_name": "Anna Nagar",
+    "rmse": 14.61,
+    "data_points": 727,
+    "trained_at": "2026-06-25T11:31:41.195279+00:00"
+  },
+  "8": {
+    "station_name": "Sholinganallur",
+    "rmse": 9.61,
+    "data_points": 727,
+    "trained_at": "2026-06-25T11:31:58.246403+00:00"
+  }
+}

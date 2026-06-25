@@ -24,7 +24,7 @@ def get_stations(db: Session = Depends(get_db)):
     )
 
     return [
-        {
+        {   "id":        s.id,
             "openaq_id": s.openaq_id,
             "name":      s.name,
             "lat":       s.lat,
