@@ -9,6 +9,10 @@ from app.services.openaq_service import (
 )
 from app.routes.forecast import router as forecast_router
 
+from app.routes.attribution import router as attribution_router  # ← add
+
+
+
 app = FastAPI(title="Vayu - Air Quality API")
 
 app.add_middleware(
@@ -19,7 +23,8 @@ app.add_middleware(
 )
 
 app.include_router(router)
-app.include_router(forecast_router)    
+app.include_router(forecast_router)  
+app.include_router(attribution_router)   
 
 scheduler = AsyncIOScheduler()
 
