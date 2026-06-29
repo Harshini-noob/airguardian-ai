@@ -83,7 +83,6 @@ function ForecastPanel({ station, onClose }) {
           hour:     `+${f.hour}h`,
           aqi:      f.aqi,
           category: f.category,
-          color:    AQI_COLOR(f.aqi),
         }))
         setForecast(data)
         setLoading(false)
@@ -94,7 +93,7 @@ function ForecastPanel({ station, onClose }) {
 
   return (
     <div style={{
-      position: 'absolute', bottom: 20, left: 20, zIndex: 1000,
+      position: 'absolute', bottom: 20, left: 80, zIndex: 1000,
       background: 'rgba(15,15,25,0.95)', color: '#fff',
       borderRadius: 12, padding: '16px 20px', width: 420,
       boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
@@ -118,50 +117,30 @@ function ForecastPanel({ station, onClose }) {
         <>
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={forecast}>
-              <XAxis
-                dataKey="hour"
-                tick={{ fill: '#aaa', fontSize: 11 }}
-                interval={3}
-              />
-              <YAxis
-                domain={[0, 500]}
-                tick={{ fill: '#aaa', fontSize: 11 }}
-                width={35}
-              />
+              <XAxis dataKey="hour" tick={{ fill: '#aaa', fontSize: 11 }} interval={3}/>
+              <YAxis domain={[0, 500]} tick={{ fill: '#aaa', fontSize: 11 }} width={35}/>
               <Tooltip
                 contentStyle={{ background: '#1a1a2e', border: 'none', borderRadius: 8 }}
                 labelStyle={{ color: '#fff' }}
-                formatter={(val, _, props) => [
-                  `AQI ${val} — ${props.payload.category}`, ''
-                ]}
+                formatter={(val, _, props) => [`AQI ${val} — ${props.payload.category}`, '']}
               />
-              {/* AQI threshold lines */}
               <ReferenceLine y={100} stroke="#ffff00" strokeDasharray="3 3" strokeOpacity={0.5}/>
               <ReferenceLine y={200} stroke="#ff7e00" strokeDasharray="3 3" strokeOpacity={0.5}/>
               <ReferenceLine y={300} stroke="#ff0000" strokeDasharray="3 3" strokeOpacity={0.5}/>
               <Line
-                type="monotone"
-                dataKey="aqi"
-                stroke="#60a5fa"
-                strokeWidth={2}
-                dot={{ fill: '#60a5fa', r: 3 }}
-                activeDot={{ r: 5 }}
+                type="monotone" dataKey="aqi" stroke="#60a5fa"
+                strokeWidth={2} dot={{ fill: '#60a5fa', r: 3 }} activeDot={{ r: 5 }}
               />
             </LineChart>
           </ResponsiveContainer>
 
-          <div style={{
-            display: 'flex', gap: 12, marginTop: 12, fontSize: 13
-          }}>
+          <div style={{ display: 'flex', gap: 12, marginTop: 12, fontSize: 13 }}>
             <div style={{
               flex: 1, background: 'rgba(255,255,255,0.07)',
               borderRadius: 8, padding: '8px 12px'
             }}>
               <div style={{ color: '#aaa' }}>Peak AQI</div>
-              <div style={{
-                fontSize: 20, fontWeight: 700,
-                color: AQI_COLOR(peak.aqi)
-              }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: AQI_COLOR(peak.aqi) }}>
                 {Math.round(peak.aqi)}
               </div>
               <div style={{ color: '#aaa', fontSize: 12 }}>at {peak.hour}</div>
@@ -171,10 +150,7 @@ function ForecastPanel({ station, onClose }) {
               borderRadius: 8, padding: '8px 12px'
             }}>
               <div style={{ color: '#aaa' }}>Now</div>
-              <div style={{
-                fontSize: 20, fontWeight: 700,
-                color: AQI_COLOR(station.aqi)
-              }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: AQI_COLOR(station.aqi) }}>
                 {Math.round(station.aqi)}
               </div>
               <div style={{ color: '#aaa', fontSize: 12 }}>{station.category}</div>
@@ -197,8 +173,164 @@ function ForecastPanel({ station, onClose }) {
   )
 }
 
+function ChatWidget() {
+  const [open, setOpen]         = useState(false)
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      text: "வணக்கம்! I'm Vayu, your Chennai air quality assistant. Ask me anything in English or Tamil! 🌬"
+    }
+  ])
+  const [input, setInput]   = useState("")
+  const [loading, setLoading] = useState(false)
+
+  const send = async () => {
+    if (!input.trim() || loading) return
+    const userMsg = input.trim()
+    setInput("")
+    setMessages(prev => [...prev, { role: "user", text: userMsg }])
+    setLoading(true)
+
+    try {
+      const history = messages.map(m => ({
+        role:    m.role === "user" ? "user" : "assistant",
+        content: m.text
+      }))
+
+      const r = await axios.post(`${API}/api/chat`, {
+        message: userMsg,
+        history
+      })
+      setMessages(prev => [...prev, {
+        role:    "assistant",
+        text:    r.data.reply,
+        sources: r.data.sources_used
+      }])
+    } catch {
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        text: "Sorry, couldn't connect to Vayu backend."
+      }])
+    }
+    setLoading(false)
+  }
+
+  return (
+    <>
+      {/* Toggle button */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          position: 'absolute', bottom: 30, left: 20, zIndex: 1001,
+          background: '#2563eb', color: '#fff', border: 'none',
+          borderRadius: '50%', width: 52, height: 52, fontSize: 22,
+          cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}
+      >
+        {open ? '✕' : '💬'}
+      </button>
+
+      {/* Chat panel */}
+      {open && (
+        <div style={{
+          position: 'absolute', bottom: 92, left: 20, zIndex: 1001,
+          width: 360, height: 480,
+          background: 'rgba(15,15,25,0.97)', borderRadius: 12,
+          display: 'flex', flexDirection: 'column',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+          border: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: '12px 16px',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            color: '#fff'
+          }}>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>🌬 Vayu Assistant</div>
+            <div style={{ fontSize: 11, color: '#60a5fa' }}>
+              English · Tamil · WHO / CPCB / TNPCB guidelines
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div style={{
+            flex: 1, overflowY: 'auto', padding: '12px 16px',
+            display: 'flex', flexDirection: 'column', gap: 10
+          }}>
+            {messages.map((m, i) => (
+              <div key={i} style={{
+                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+                maxWidth: '85%'
+              }}>
+                <div style={{
+                  background: m.role === 'user'
+                    ? '#2563eb'
+                    : 'rgba(255,255,255,0.08)',
+                  color: '#fff', borderRadius: 10,
+                  padding: '8px 12px', fontSize: 13, lineHeight: 1.6
+                }}>
+                  {m.text}
+                </div>
+                {m.sources && m.sources.length > 0 && (
+                  <div style={{ fontSize: 10, color: '#60a5fa', marginTop: 3 }}>
+                    Sources: {m.sources.join(', ')}
+                  </div>
+                )}
+              </div>
+            ))}
+            {loading && (
+              <div style={{
+                alignSelf: 'flex-start',
+                background: 'rgba(255,255,255,0.08)',
+                color: '#aaa', borderRadius: 10,
+                padding: '8px 12px', fontSize: 13
+              }}>
+                Vayu is thinking...
+              </div>
+            )}
+          </div>
+
+          {/* Input */}
+          <div style={{
+            padding: '10px 12px',
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex', gap: 8
+          }}>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && send()}
+              placeholder="Ask in English or Tamil..."
+              style={{
+                flex: 1, background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 8, padding: '8px 12px',
+                color: '#fff', fontSize: 13, outline: 'none'
+              }}
+            />
+            <button
+              onClick={send}
+              disabled={loading}
+              style={{
+                background: loading ? '#1d4ed8' : '#2563eb',
+                color: '#fff', border: 'none',
+                borderRadius: 8, padding: '8px 14px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontSize: 16
+              }}
+            >
+              ➤
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 export default function App() {
-  const [stations, setStations]         = useState([])
+  const [stations, setStations]    = useState([])
   const [selectedStation, setSelected] = useState(null)
 
   const load = () => {
@@ -248,10 +380,7 @@ export default function App() {
             <Popup>
               <div style={{ fontSize: 14, minWidth: 160 }}>
                 <strong>{s.name}</strong><br/>
-                <span style={{
-                  color: AQI_COLOR(s.aqi),
-                  fontWeight: 700, fontSize: 18
-                }}>
+                <span style={{ color: AQI_COLOR(s.aqi), fontWeight: 700, fontSize: 18 }}>
                   AQI {Math.round(s.aqi)}
                 </span>
                 {' — '}{s.category}<br/>
@@ -260,14 +389,16 @@ export default function App() {
                 <small style={{ color: '#888' }}>
                   {new Date(s.fetched_at).toLocaleTimeString()}
                 </small><br/>
-                <small style={{ color: '#60a5fa', cursor: 'pointer' }}
+                <small
+                  style={{ color: '#60a5fa', cursor: 'pointer' }}
                   onClick={() => setSelected({
                     station_id:   s.id,
                     station_name: s.name,
                     area:         s.area,
                     aqi:          s.aqi,
                     category:     s.category,
-                  })}>
+                  })}
+                >
                   📈 View 24hr forecast →
                 </small>
               </div>
@@ -277,6 +408,7 @@ export default function App() {
       </MapContainer>
 
       <Legend />
+      <ChatWidget />
 
       {selectedStation && (
         <ForecastPanel
