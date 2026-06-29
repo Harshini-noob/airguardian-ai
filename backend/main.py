@@ -2,16 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from app.routes.stations import router
+from app.routes.forecast import router as forecast_router
+from app.routes.attribution import router as attribution_router
+from app.routes.chatbot import router as chatbot_router
 from app.database import SessionLocal
 from app.services.openaq_service import (
     fetch_all_chennai_stations,
     save_readings_to_db
 )
-from app.routes.forecast import router as forecast_router
-
-from app.routes.attribution import router as attribution_router  # ← add
-
-
 
 app = FastAPI(title="Vayu - Air Quality API")
 
@@ -23,8 +21,9 @@ app.add_middleware(
 )
 
 app.include_router(router)
-app.include_router(forecast_router)  
-app.include_router(attribution_router)   
+app.include_router(forecast_router)
+app.include_router(attribution_router)
+app.include_router(chatbot_router)
 
 scheduler = AsyncIOScheduler()
 

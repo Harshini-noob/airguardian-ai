@@ -1,0 +1,43 @@
+CPCB NATIONAL AIR QUALITY INDEX — INDIA STANDARD
+
+CPCB AQI CATEGORIES AND HEALTH BREAKPOINTS:
+
+AQI 0-50: GOOD
+Health Message: Minimal impact on health. Air quality is considered satisfactory and air pollution poses little or no risk. Outdoor activities including jogging, cycling, sports are safe for all groups.
+
+AQI 51-100: SATISFACTORY  
+Health Message: Minor breathing discomfort to sensitive people. People who are unusually sensitive to air pollution should consider reducing prolonged or heavy outdoor exertion. Sensitive groups include people with asthma, heart disease, children, and elderly.
+
+AQI 101-200: MODERATE
+Health Message: Breathing discomfort to the people with lungs and heart disease, children and older adults. General population unlikely to be affected. Sensitive groups should limit prolonged outdoor exertion. Others may continue normal outdoor activities but monitor for symptoms.
+
+AQI 201-300: POOR
+Health Message: Breathing discomfort to most people on prolonged exposure. People with heart or lung disease, elderly, and children should avoid prolonged outdoor exertion. Everyone else should limit prolonged outdoor exertion. Wear N95 mask if outdoor activity is unavoidable.
+
+AQI 301-400: VERY POOR
+Health Message: Respiratory illness on prolonged exposure. People with heart or lung disease, elderly and children should avoid all outdoor activity. Everyone else should avoid prolonged outdoor exertion. Keep windows closed. Use air purifiers indoors if available.
+
+AQI 401-500: SEVERE
+Health Message: Respiratory effects even on healthy people. Serious aggravation of heart or lung disease and premature mortality in people with cardiopulmonary disease and elderly. Healthy people experience serious effects. All outdoor physical activity should be avoided. Emergency health warning issued.
+
+CPCB POLLUTANT STANDARDS:
+PM2.5 24-hour standard: 60 µg/m³
+PM10 24-hour standard: 100 µg/m³
+NO2 24-hour standard: 80 µg/m³
+SO2 24-hour standard: 80 µg/m³
+CO 8-hour standard: 2 mg/m³
+Ozone 8-hour standard: 100 µg/m³
+
+CPCB GRADED RESPONSE ACTION PLAN (GRAP):
+Stage 1 (AQI 201-300 POOR): Reduce dust from roads, ban garbage burning, increase public transport frequency
+Stage 2 (AQI 301-400 VERY POOR): Construction dust control, ban diesel generator sets except for essential services, promote work from home
+Stage 3 (AQI 401-450 SEVERE): Stop non-essential construction, ban trucks except essential commodities, close brick kilns and hot mix plants
+Stage 4 (AQI 450+ SEVERE+): Consider odd-even vehicle scheme, close schools and colleges, stop non-essential industries
+
+CPCB EMISSION SOURCE CATEGORIES FOR URBAN INDIA:
+1. Vehicular emissions — 30-40% of PM2.5 in metro cities
+2. Industrial emissions — 20-30% including power plants, factories, refineries
+3. Road dust — 15-20% from unpaved roads and construction
+4. Construction dust — 10-15% from active building sites
+5. Biomass burning — 5-10% including agricultural residue and waste burning
+6. Domestic sources — 5% from cooking and heating

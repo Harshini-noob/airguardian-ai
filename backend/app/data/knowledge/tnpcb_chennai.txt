@@ -1,0 +1,69 @@
+TAMIL NADU POLLUTION CONTROL BOARD — CHENNAI SPECIFIC DATA
+
+CHENNAI AIR QUALITY MONITORING STATIONS (TNPCB/CPCB):
+1. Manali — North Chennai industrial zone, consistently high pollution
+2. Kodungaiyur — North Chennai, near solid waste processing facility
+3. Alandur — South Chennai, moderate industrial and traffic mix
+4. Velachery — South Chennai, high residential and commercial density
+5. T.Nagar — Central Chennai, highest vehicle density in city
+6. Anna Nagar — West Chennai, mixed residential
+7. Perungudi — South Chennai, IT corridor fringe
+8. Sholinganallur — IT corridor, relatively lower pollution
+
+CHENNAI POLLUTION HOTSPOTS AND SOURCES:
+
+NORTH CHENNAI (Manali, Kodungaiyur, Ennore):
+Primary pollutants: SO2, NOx, PM2.5 from industrial sources
+Major contributors: Chennai Petroleum Corporation Limited (CPCL), Coromandel Fertilizers, thermal power plants, chemical industries in SIPCOT Manali Industrial Estate
+Annual PM2.5 levels frequently exceed 60 µg/m³
+Residents face significantly higher risk of respiratory and cardiovascular disease
+TNPCB enforcement priority: Industrial stack emission monitoring
+
+CENTRAL CHENNAI (T.Nagar, Egmore, Nungambakkam):
+Primary pollutants: PM2.5, NOx, CO from vehicular emissions
+T.Nagar has one of the highest vehicle densities in India
+Peak pollution: 8-10am and 5-8pm on weekdays
+Weekend pollution 20-30% lower than weekdays
+Recommended action: Congestion pricing, expanded bus rapid transit
+
+SOUTH CHENNAI (Velachery, Perungudi, Sholinganallur):
+Primary pollutants: Construction dust PM10, vehicular PM2.5
+Active infrastructure projects — metro rail expansion, flyover construction
+IT corridor traffic increasing annually
+Sholinganallur relatively cleaner but construction activity increasing
+
+TNPCB HEALTH ADVISORIES FOR CHENNAI:
+
+For North Chennai residents near industrial zones:
+- Avoid outdoor activity on days when visible haze is present
+- Plant dust-absorbing trees: Neem, Pongamia, Terminalia
+- Use wet cloth over windows to reduce indoor infiltration
+- Children and elderly should stay indoors during morning industrial activity peaks
+
+For all Chennai residents:
+- Check AQI before morning exercise — use SAMEER app by CPCB
+- Best outdoor exercise time: 5:00-6:30 AM before traffic builds
+- Avoid roads during peak hours if possible
+- Use public transport — CMBT buses, MRTS, Chennai Metro
+
+SEASONAL PATTERNS IN CHENNAI:
+Winter (December-February): Worst AQI due to temperature inversions trapping pollutants
+Northeast monsoon (October-December): Rain temporarily improves AQI
+Summer (March-May): Moderate AQI, sea breeze provides natural ventilation
+Southwest monsoon (June-September): Generally better AQI due to rainfall
+
+TAMIL LANGUAGE HEALTH ADVISORIES:
+
+நல்ல காற்று தரம் (AQI 0-50): வெளியே உடற்பயிற்சி செய்யலாம். குழந்தைகளை விளையாட அனுமதிக்கலாம்.
+
+திருப்திகரமான காற்று தரம் (AQI 51-100): பொதுவாக பாதுகாப்பானது. உணர்திறன் உள்ளவர்கள் கவனமாக இருக்கவும்.
+
+மிதமான மாசு (AQI 101-200): குழந்தைகள், முதியோர், ஆஸ்துமா நோயாளிகள் வெளியில் குறைந்த நேரம் இருக்கவும்.
+
+மோசமான காற்று தரம் (AQI 201-300): N95 மாஸ்க் அணியவும். வெளியே போவதை தவிர்க்கவும்.
+
+மிகவும் மோசமான காற்று (AQI 301-400): வீட்டிற்குள்ளேயே இருங்கள். ஜன்னல்களை மூடவும்.
+
+கடுமையான மாசு (AQI 400+): அவசர நிலை. உடனே மருத்துவரை அணுகவும். வெளியே செல்லாதீர்கள்.
+
+மணலி மற்றும் கொடுங்கையூர் பகுதி மக்களுக்கு: தொழிற்சாலை மாசு அதிகமாக உள்ளது. காலை நேரத்தில் வெளியே செல்வதை தவிர்க்கவும். குழந்தைகளை வெளியே விளையாட அனுமத்திக்காதீர்கள்.
