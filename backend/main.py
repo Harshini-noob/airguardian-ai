@@ -10,6 +10,7 @@ from app.services.openaq_service import (
     fetch_all_chennai_stations,
     save_readings_to_db
 )
+from app.routes.enforcement import router as enforcement_router
 
 app = FastAPI(title="Vayu - Air Quality API")
 
@@ -24,6 +25,7 @@ app.include_router(router)
 app.include_router(forecast_router)
 app.include_router(attribution_router)
 app.include_router(chatbot_router)
+app.include_router(enforcement_router)
 
 scheduler = AsyncIOScheduler()
 

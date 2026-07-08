@@ -68,6 +68,14 @@ function TopBar({ stations }) {
       <span style={{ marginLeft: 'auto' }}>Avg AQI: <strong>{avg}</strong></span>
       <span>Worst: <strong style={{ color: '#ff7e00' }}>{worst.name}</strong> ({Math.round(worst.aqi)})</span>
       <span style={{ color: '#aaa', fontSize: 12 }}>Auto-refresh: 5 min</span>
+      <a href="/enforcement" style={{
+        color: '#60a5fa', fontSize: 12,
+        textDecoration: 'none',
+        background: 'rgba(96,165,250,0.15)',
+        padding: '4px 10px', borderRadius: 6
+      }}>
+        🚨 Enforcement →
+      </a>
     </div>
   )
 }

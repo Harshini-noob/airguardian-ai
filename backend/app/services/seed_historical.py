@@ -14,14 +14,13 @@ DAYS = 30
 READINGS_PER_DAY = 24  # one per hour
 
 STATION_PROFILES = {
-    "Manali Industrial Area":  {"base": 85,  "variance": 30},
-    "Alandur":                 {"base": 55,  "variance": 20},
-    "Velachery":               {"base": 60,  "variance": 22},
-    "Kodungaiyur":             {"base": 90,  "variance": 35},
-    "Perungudi":               {"base": 50,  "variance": 18},
-    "T.Nagar":                 {"base": 65,  "variance": 25},
-    "Anna Nagar":              {"base": 45,  "variance": 15},
-    "Sholinganallur":          {"base": 35,  "variance": 12},
+    "Manali, Chennai - CPCB":              {"base": 85, "variance": 30},
+    "Manali Village, Chennai - TNPCB":     {"base": 80, "variance": 28},
+    "Kodungaiyur, Chennai - TNPCB":        {"base": 90, "variance": 35},
+    "Royapuram, Chennai - TNPCB":          {"base": 70, "variance": 25},
+    "Arumbakkam, Chennai - TNPCB":         {"base": 55, "variance": 20},
+    "Velachery Res. Area, Chennai - CPCB": {"base": 60, "variance": 22},
+    "Perungudi, Chennai - TNPCB":          {"base": 50, "variance": 18},
 }
 
 def get_pm25_for_hour(base: float, variance: float, hour: int, day_of_week: int) -> float:

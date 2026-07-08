@@ -126,3 +126,36 @@ def get_all_attributions(stations: list[dict]) -> list[dict]:
             **attr
         })
     return results
+
+
+def get_enforcement_priorities(stations_with_attribution: list[dict]) -> list[dict]:
+    """
+    Takes attribution data and ranks stations by enforcement priority.
+    Priority = severity weight × primary source confidence
+    """
+    severity_weights = {
+        "low":      1,
+        "moderate": 2,
+        "high":     3,
+        "severe":   4,
+    }
+
+    priorities = []
+    for s in stations_with_attribution:
+        severity_weight = severity_weights.get(s["severity"], 1)
+        confidence      = s["primary_pct"] / 100
+        priority_score  = round(severity_weight * confidence * s["aqi"], 1)
+
+        priorities.append({
+            **s,
+            "priority_score": priority_score,
+            "priority_rank":  None,  # filled in below
+        })
+
+    # sort by priority score descending
+    priorities.sort(key=lambda x: x["priority_score"], reverse=True)
+
+    for i, p in enumerate(priorities):
+        p["priority_rank"] = i + 1
+
+    return priorities

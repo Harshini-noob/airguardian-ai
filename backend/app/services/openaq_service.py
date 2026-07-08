@@ -1,4 +1,5 @@
 import httpx
+import hashlib
 import logging
 import os
 import asyncio
@@ -188,8 +189,8 @@ async def fetch_all_chennai_stations() -> list[dict]:
             lat  = station_data["lat"] or 13.0827
             lon  = station_data["lon"] or 80.2707
 
-            # generate a unique openaq_id from station name hash
-            openaq_id = abs(hash(station_name)) % 10000 + 2000
+            # generate a stable unique openaq_id from station name hash
+            openaq_id = int(hashlib.md5(station_name.encode()).hexdigest(), 16) % 10000 + 2000
 
             results.append({
                 "openaq_id":  openaq_id,
@@ -213,7 +214,7 @@ async def fetch_all_chennai_stations() -> list[dict]:
             pm25 = get_fallback_pm25(s["area"])
             aqi  = pm25_to_aqi(pm25)
             results.append({
-                "openaq_id":  abs(hash(s["name"])) % 10000 + 2000,
+                "openaq_id":  int(hashlib.md5(s["name"].encode()).hexdigest(), 16) % 10000 + 2000,
                 "name":       s["name"],
                 "lat":        s["lat"],
                 "lon":        s["lon"],
