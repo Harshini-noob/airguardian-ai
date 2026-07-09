@@ -148,8 +148,8 @@ export default function EnforcementDashboard() {
         padding: '14px 24px',
         display: 'flex', alignItems: 'center', gap: 20
       }}>
-        <a href="/" style={{ color: '#60a5fa', textDecoration: 'none', fontSize: 13 }}>
-          ← Back to Map
+        <a href="/dashboard" style={{ color: '#60a5fa', textDecoration: 'none', fontSize: 13 }}>
+          ← Back to Dashboard
         </a>
         <span style={{ fontWeight: 700, fontSize: 18, color: '#60a5fa' }}>
           🌬 Vayu
