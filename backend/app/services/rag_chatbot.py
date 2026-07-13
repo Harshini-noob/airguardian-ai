@@ -8,18 +8,24 @@ from pathlib import Path
 load_dotenv()
 
 groq_client  = Groq(api_key=os.getenv("GROQ_API_KEY"))
-chroma_client = chromadb.PersistentClient(path="./chroma_db")
 
-# use sentence-transformers for embeddings
-ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-    model_name="all-MiniLM-L6-v2"
-)
 
-collection = chroma_client.get_or_create_collection(
-    name="vayu_knowledge",
-    embedding_function=ef
-)
+_chroma_client = None
+_collection    = None
 
+def get_collection():
+    global _chroma_client, _collection
+    if _collection is None:
+        from chromadb.utils import embedding_functions
+        ef = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name="all-MiniLM-L6-v2"
+        )
+        _chroma_client = chromadb.PersistentClient(path="./chroma_db")
+        _collection    = _chroma_client.get_or_create_collection(
+            name="vayu_knowledge",
+            embedding_function=ef
+        )
+    return _collection
 KNOWLEDGE_DIR = Path(__file__).parent.parent / "data" / "knowledge"
 
 
@@ -37,8 +43,8 @@ def chunk_text(text: str, chunk_size: int = 300, overlap: int = 50) -> list[str]
 
 def seed_knowledge_base():
     """Load all .txt files from knowledge/ into ChromaDB"""
-    if collection.count() > 0:
-        print(f"ChromaDB already has {collection.count()} chunks — skipping seed")
+    if get_collection().count() > 0:
+        print(f"ChromaDB already has {get_collection().count()} chunks — skipping seed")
         return
 
     all_chunks = []
@@ -48,23 +54,19 @@ def seed_knowledge_base():
     for txt_file in KNOWLEDGE_DIR.glob("*.txt"):
         text   = txt_file.read_text(encoding="utf-8")
         chunks = chunk_text(text)
-        source = txt_file.stem  # e.g. "who_guidelines"
+        source = txt_file.stem  
 
         for i, chunk in enumerate(chunks):
             all_chunks.append(chunk)
             all_ids.append(f"{source}_{i}")
             all_metas.append({"source": source, "chunk_index": i})
 
-    collection.add(
+    get_collection().add(
         documents=all_chunks,
         ids=all_ids,
         metadatas=all_metas
     )
     print(f"Seeded {len(all_chunks)} chunks from {KNOWLEDGE_DIR}")
-
-
-# seed on startup
-seed_knowledge_base()
 
 
 def detect_language(text: str) -> str:
@@ -73,9 +75,9 @@ def detect_language(text: str) -> str:
 
 
 def get_relevant_context(query: str, n_results: int = 4) -> str:
-    results = collection.query(
+    results = get_collection().query(
         query_texts=[query],
-        n_results=min(n_results, collection.count())
+        n_results=min(n_results, get_collection().count())
     )
     docs    = results["documents"][0]
     metas   = results["metadatas"][0]
@@ -115,6 +117,9 @@ def chat(
     if conversation_history is None:
         conversation_history = []
 
+    # seed on first chat call, not on import
+    seed_knowledge_base()
+
     language = detect_language(user_message)
 
     # build stations context
@@ -149,7 +154,7 @@ def chat(
     # extract which sources were used
     sources = list(set(
         r["source"] for r in
-        collection.query(query_texts=[user_message], n_results=4)["metadatas"][0]
+        get_collection().query(query_texts=[user_message], n_results=4)["metadatas"][0]
     ))
 
     return {
