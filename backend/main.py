@@ -11,8 +11,10 @@ from app.services.openaq_service import (
     save_readings_to_db
 )
 from app.routes.enforcement import router as enforcement_router
+from app.routes.advisory import router as advisory_router
+from app.routes.compare import router as compare_router
 
-app = FastAPI(title="Vayu - Air Quality API")
+app = FastAPI(title="AeroSense — Air Quality API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,23 +28,26 @@ app.include_router(forecast_router)
 app.include_router(attribution_router)
 app.include_router(chatbot_router)
 app.include_router(enforcement_router)
+app.include_router(advisory_router)
+app.include_router(compare_router)
 
 scheduler = AsyncIOScheduler()
 
-async def poll_and_save():
-    readings = await fetch_all_chennai_stations()
-    db = SessionLocal()
-    try:
-        save_readings_to_db(db, readings)
-    finally:
-        db.close()
 
 @app.on_event("startup")
 async def startup():
-    await poll_and_save()
-    scheduler.add_job(poll_and_save, "interval", minutes=15)
+    async def refresh():
+        db = SessionLocal()
+        try:
+            stations = await fetch_all_chennai_stations()
+            save_readings_to_db(db, stations)
+        finally:
+            db.close()
+
+    scheduler.add_job(refresh, "interval", minutes=15, id="refresh_stations")
     scheduler.start()
 
-@app.get("/")
-def root():
-    return {"status": "Vayu API running"}
+
+@app.on_event("shutdown")
+async def shutdown():
+    scheduler.shutdown()
