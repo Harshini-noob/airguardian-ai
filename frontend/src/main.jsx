@@ -5,6 +5,8 @@ import './index.css'
 import Landing from './Landing.jsx'
 import App from './App.jsx'
 import EnforcementDashboard from './EnforcementDashboard.jsx'
+import Advisories from './Advisories.jsx'
+import Compare from './Compare.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -13,6 +15,8 @@ createRoot(document.getElementById('root')).render(
         <Route path="/"            element={<Landing />} />
         <Route path="/dashboard"   element={<App />} />
         <Route path="/enforcement" element={<EnforcementDashboard />} />
+        <Route path="/advisories"  element={<Advisories />} />
+        <Route path="/compare"     element={<Compare />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

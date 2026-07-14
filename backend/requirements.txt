@@ -6,3 +6,6 @@ httpx
 python-dotenv
 redis
 apscheduler
+groq
+chromadb
+sentence-transformers
