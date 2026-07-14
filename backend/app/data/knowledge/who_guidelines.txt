@@ -1,0 +1,31 @@
+WHO AIR QUALITY GUIDELINES 2021 — KEY RECOMMENDATIONS
+
+PM2.5 Annual Mean Guideline: 5 µg/m³
+PM2.5 24-hour Mean Guideline: 15 µg/m³
+PM10 Annual Mean Guideline: 15 µg/m³
+PM10 24-hour Mean Guideline: 45 µg/m³
+NO2 Annual Mean Guideline: 10 µg/m³
+NO2 24-hour Mean Guideline: 25 µg/m³
+Ozone 8-hour Mean Guideline: 60 µg/m³
+
+WHO HEALTH IMPACT STATEMENTS:
+
+Particulate matter PM2.5 and PM10 can penetrate deep into the lungs and enter the bloodstream. Long-term exposure causes cardiovascular disease, respiratory disease, and lung cancer. There is no safe level of PM2.5 exposure.
+
+Short-term exposure to high PM2.5 levels causes aggravation of asthma, increased hospital admissions for heart and lung disease, increased risk of respiratory infections, and premature death among people with heart or lung disease.
+
+Children are particularly vulnerable because their lungs are still developing. Exposure to air pollution in early life leads to reduced lung function, increased respiratory infections, and impaired neurodevelopment.
+
+Elderly people above 65 are at higher risk because of reduced cardiovascular and respiratory reserve and increased likelihood of pre-existing conditions.
+
+Pregnant women exposed to high PM2.5 levels face increased risk of preterm birth, low birth weight, and gestational diabetes.
+
+Outdoor workers including construction workers, traffic police, auto-rickshaw drivers, and street vendors face prolonged exposure and require protective equipment when AQI exceeds 150.
+
+WHO INTERIM TARGETS FOR COUNTRIES LIKE INDIA:
+Interim Target 1: PM2.5 annual mean 35 µg/m³ — 6% reduction in mortality vs higher levels
+Interim Target 2: PM2.5 annual mean 25 µg/m³
+Interim Target 3: PM2.5 annual mean 15 µg/m³
+Final guideline: PM2.5 annual mean 5 µg/m³
+
+India's current National Ambient Air Quality Standard for PM2.5 is 40 µg/m³ annual mean and 60 µg/m³ 24-hour mean — significantly higher than WHO guidelines, indicating substantial room for improvement.

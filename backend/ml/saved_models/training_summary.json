@@ -1,0 +1,44 @@
+{
+  "1": {
+    "station_name": "Manali, Chennai - CPCB",
+    "rmse": 44.17,
+    "data_points": 725,
+    "trained_at": "2026-07-08T12:18:57.144222+00:00"
+  },
+  "2": {
+    "station_name": "Kodungaiyur, Chennai - TNPCB",
+    "rmse": 49.03,
+    "data_points": 725,
+    "trained_at": "2026-07-08T12:19:07.963728+00:00"
+  },
+  "3": {
+    "station_name": "Velachery Res. Area, Chennai - CPCB",
+    "rmse": 26.74,
+    "data_points": 725,
+    "trained_at": "2026-07-08T12:19:17.926547+00:00"
+  },
+  "4": {
+    "station_name": "Perungudi, Chennai - TNPCB",
+    "rmse": 17.35,
+    "data_points": 725,
+    "trained_at": "2026-07-08T12:19:28.009818+00:00"
+  },
+  "5": {
+    "station_name": "Arumbakkam, Chennai - TNPCB",
+    "rmse": 23.86,
+    "data_points": 725,
+    "trained_at": "2026-07-08T12:19:38.101887+00:00"
+  },
+  "6": {
+    "station_name": "Manali Village, Chennai - TNPCB",
+    "rmse": 40.27,
+    "data_points": 725,
+    "trained_at": "2026-07-08T12:19:48.536758+00:00"
+  },
+  "7": {
+    "station_name": "Royapuram, Chennai - TNPCB",
+    "rmse": 36.48,
+    "data_points": 725,
+    "trained_at": "2026-07-08T12:19:58.975312+00:00"
+  }
+}
