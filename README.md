@@ -1,307 +1,338 @@
-# AeroSense 🌫️
+# AeroSense — AI-Powered Urban Air Quality Intelligence
 
-**AI-Powered Urban Air Quality Intelligence Platform**
+AeroSense is a full-stack air quality monitoring and advisory platform built for Chennai. It combines live sensor data from government monitoring networks, LSTM-based 24-hour forecasting, source attribution, and Groq-powered bilingual health advisories into a single cohesive platform.
 
-AeroSense fuses real-time CAAQMS station data with AI to deliver live AQI maps, 72-hour forecasts, pollution source attribution, enforcement dashboards, and bilingual citizen advisories for Indian cities (starting with Chennai).
+## Screenshots
 
----
+| Dashboard | Advisories | Compare | enforcement
+|---|---|---|---|
+| ![Dashboard](./screenshots/dashboard.png) | ![Advisories](./screenshots/advisory.png) | ![Compare](./screenshots/compare.png) | ![Enforcement](./screenshots/enforcement.png)
+| Dark CARTO map with AQI station markers | Station advisory in English or Tamil | 2–5 station AQI trend overlay |
+
+## Features
+
+### Real-Time Monitoring
+- Pulls live data from CPCB and TNPCB monitoring stations across Chennai via the OpenAQ API
+- Auto-refreshes every 5 minutes in the browser
+- AQI-coded circular markers on a CARTO dark map — marker radius scales with pollution severity
+- Click any station to open the detail panel
+
+### 24-Hour AI Forecast
+- PyTorch LSTM model trained per station on historical readings
+- Predicts AQI 1–24 hours ahead, with diurnal peak detection
+- Displayed as an area chart with AQI threshold reference lines (Satisfactory / Moderate / Poor)
+- Summary cards: current AQI, peak AQI + timing, rising/falling trend
+
+### Source Attribution
+- Breaks pollution at each station into four categories: Industrial, Traffic, Construction, Dust/Natural
+- Shown as a stacked bar + percentage rows in the Attribution tab of the station panel
+- Powers enforcement priority scoring
+
+### Bilingual AI Advisory (English + Tamil)
+- POST to Groq LLaMA 3.3 70B with a RAG context built from WHO 2021 guidelines, CPCB NAQI standards, and TNPCB data
+- Response is structured: advisory text, risk level (low/moderate/high/severe), vulnerable groups list
+- 30-minute in-memory cache per station+language pair — avoids re-generating for the same conditions
+- Graceful fallback text if Groq is unavailable
+
+### Station Comparison
+- Select 2–5 stations from a checkbox grid (colour-coded 1–5)
+- Fetches the last 24 hours of readings for each station
+- Overlaid multi-line Recharts chart with per-station AQI colours
+- Summary stat cards: average AQI and peak AQI per station
+
+### Enforcement Intelligence
+- All stations ranked by a priority score (AQI × source attribution confidence)
+- Each entry shows the recommended action, dominant source, severity badge
+- Source summary sidebar: which pollution category dominates across the city today
+- Designed for inspection teams and municipal authorities
+
+### AI Chat
+- RAG chatbot in the main dashboard sidebar
+- Grounded in WHO, CPCB, and TNPCB reference documents
+- Responds in the language the user types (English or Tamil auto-detected)
+
+## Technology Stack
+
+### Backend
+
+| Layer | Technology |
+|---|---|
+| Web framework | FastAPI (Python 3.11+) |
+| Database | PostgreSQL 15 via SQLAlchemy ORM |
+| Cache | Redis 7 |
+| Container orchestration | Docker + Docker Compose |
+| ML forecasting | PyTorch (LSTM + Transformer models) |
+| LLM inference | Groq API — LLaMA 3.3 70B |
+| RAG / embeddings | ChromaDB + sentence-transformers (all-MiniLM-L6-v2) |
+| Data source | OpenAQ REST API (CPCB + TNPCB Chennai stations) |
+
+### Frontend
+
+| Layer | Technology |
+|---|---|
+| Framework | React 18 + Vite |
+| Routing | react-router-dom v7 |
+| Map | react-leaflet + Leaflet.js (CARTO dark tiles) |
+| Charts | Recharts |
+| HTTP | Axios |
+| Fonts | Space Grotesk (headings) + Inter (body) |
+| Styling | Inline CSS — no CSS frameworks |
 
 ## Project Structure
 
 ```
 aerosense/
-├── backend/                  # FastAPI Python backend
+├── backend/
 │   ├── app/
-│   │   ├── routes/           # API route handlers
-│   │   │   ├── stations.py       # Ward/station data
-│   │   │   ├── forecast.py       # 72-hour AQI forecasting
-│   │   │   ├── attribution.py    # AI source attribution
-│   │   │   ├── chatbot.py        # RAG AI chat
-│   │   │   └── enforcement.py    # Enforcement intelligence
-│   │   ├── services/
-│   │   │   ├── openaq_service.py     # OpenAQ data fetcher
-│   │   │   ├── attribution.py        # Attribution logic
-│   │   │   ├── rag_chatbot.py        # Groq LLM + RAG
-│   │   │   └── seed_historical.py    # DB seeding
-│   │   ├── models/
-│   │   │   └── station.py        # SQLAlchemy ORM models
-│   │   └── database.py           # DB connection
-│   ├── ml/                   # ML models
-│   │   ├── lstm_model.py
-│   │   ├── transformer_model.py
-│   │   ├── train.py
-│   │   └── saved_models/
-│   ├── main.py               # FastAPI app entry point
+│   │   ├── models/          # SQLAlchemy ORM models
+│   │   ├── routes/
+│   │   │   ├── stations.py      # GET /api/stations
+│   │   │   ├── forecast.py      # GET /api/forecast/{id}
+│   │   │   ├── attribution.py   # GET /api/attribution/{id}
+│   │   │   ├── enforcement.py   # GET /api/enforcement
+│   │   │   ├── chat.py          # POST /api/chat
+│   │   │   ├── advisory.py      # GET /api/advisory/{id}?lang=en|ta
+│   │   │   └── compare.py       # GET /api/compare?ids=1,2,3
+│   │   └── services/        # ML inference, RAG, data ingestion
+│   ├── main.py              # FastAPI app entry point
 │   ├── requirements.txt
-│   └── docker-compose.yml    # PostgreSQL + Redis
+│   ├── Dockerfile
+│   └── docker-compose.yml   # PostgreSQL + Redis
 │
-└── frontend/                 # React + Vite frontend
-    ├── src/
-    │   ├── main.jsx          # Router (Landing / Dashboard / Enforcement)
-    │   ├── Landing.jsx       # Landing page
-    │   ├── App.jsx           # Main AQI map dashboard
-    │   └── EnforcementDashboard.jsx
-    ├── package.json
-    └── vite.config.js
+├── frontend/
+│   ├── src/
+│   │   ├── main.jsx             # React Router — all route declarations
+│   │   ├── App.jsx              # Main map dashboard
+│   │   ├── Landing.jsx          # Marketing / entry page
+│   │   ├── Advisories.jsx       # Station advisory generator
+│   │   ├── Compare.jsx          # Multi-station comparison
+│   │   └── EnforcementDashboard.jsx  # Priority inspection queue
+│   ├── index.html
+│   ├── vite.config.js
+│   └── package.json
+│
+├── screenshots/
+│   ├── dashboard.png
+│   ├── advisories.png
+│   └── compare.png
+│
+└── README.md
 ```
 
----
+## API Reference
 
-## Prerequisites
+### `GET /api/stations`
+Returns all active monitoring stations with live AQI.
 
-Make sure the following are installed on your machine:
+```json
+[
+  {
+    "id": 1,
+    "openaq_id": "IN-CPCB-001",
+    "name": "Manali, Chennai - CPCB",
+    "area": "Manali",
+    "lat": 13.1674,
+    "lon": 80.2641,
+    "pm25": 87.4,
+    "aqi": 178,
+    "category": "Moderate",
+    "fetched_at": "2026-07-15T10:30:00Z"
+  }
+]
+```
 
-| Tool | Version | Download |
-|------|---------|----------|
-| Python | 3.10+ | https://python.org |
-| Node.js | 18+ | https://nodejs.org |
-| npm | 9+ | bundled with Node.js |
-| Docker Desktop | latest | https://docker.com/products/docker-desktop |
+### `GET /api/forecast/{station_id}`
+Returns 24-hour AQI forecast from the LSTM model.
 
----
+```json
+{
+  "forecast": [
+    { "hour": 1, "aqi": 182, "category": "Moderate" }
+  ]
+}
+```
 
-## Environment Setup
+### `GET /api/attribution/{station_id}`
+Returns source attribution breakdown for the station.
 
-### 1. Clone the repository
+```json
+{
+  "sources": {
+    "Industrial": 0.52,
+    "Traffic": 0.28,
+    "Construction": 0.12,
+    "Dust/Natural": 0.08
+  },
+  "primary_source": "Industrial",
+  "primary_pct": 52,
+  "enforcement": "Inspect industrial units in Manali industrial estate.",
+  "severity": "high"
+}
+```
+
+### `GET /api/advisory/{station_id}?lang=en|ta`
+Generates (or returns cached) AI health advisory for the station.
+
+```json
+{
+  "station_name": "Manali",
+  "aqi": 178,
+  "risk_level": "moderate",
+  "advisory": "Air quality at Manali is Moderate today...",
+  "vulnerable_groups": ["Children", "Elderly", "Asthma patients"],
+  "lang": "en"
+}
+```
+
+### `GET /api/compare?ids=1,2,3`
+Returns the last 24 hours of readings for up to 5 stations.
+
+```json
+[
+  {
+    "station_id": 1,
+    "station_name": "Manali",
+    "avg_aqi": 164,
+    "peak_aqi": 212,
+    "readings": [
+      { "hour": "2026-07-15T01:00", "aqi": 152 }
+    ]
+  }
+]
+```
+
+### `GET /api/enforcement`
+Returns all stations ranked by enforcement priority.
+
+```json
+{
+  "total_stations": 12,
+  "critical_count": 4,
+  "priorities": [
+    {
+      "station_id": 1,
+      "name": "Manali, Chennai - CPCB",
+      "area": "Manali",
+      "aqi": 218,
+      "category": "Poor",
+      "priority_score": 87,
+      "severity": "high",
+      "sources": { "Industrial": 0.52, "Traffic": 0.28, "Construction": 0.12, "Dust/Natural": 0.08 },
+      "primary_source": "Industrial",
+      "primary_pct": 52,
+      "enforcement": "Inspect industrial units in Manali industrial estate."
+    }
+  ]
+}
+```
+
+### `POST /api/chat`
+RAG chatbot endpoint.
+
+```json
+// Request
+{ "message": "Is it safe to jog today at Velachery?", "history": [] }
+
+// Response
+{ "reply": "...", "sources_used": ["WHO 2021", "CPCB NAQI"] }
+```
+
+## Setup (VS Code / Local)
+
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- Docker Desktop (for PostgreSQL + Redis)
+- A Groq API key — free at [console.groq.com](https://console.groq.com)
+
+### 1 — Clone and configure environment
 
 ```bash
 git clone <your-repo-url>
 cd aerosense
 ```
 
-### 2. Create backend `.env` file
-
-Create a file at `backend/.env` with the following content:
+Create `backend/.env`:
 
 ```env
-# Database (matches docker-compose defaults — change if you use your own Postgres)
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx
 DATABASE_URL=postgresql://vayu:vayu123@localhost:5432/vayu
-
-# Redis
 REDIS_URL=redis://localhost:6379
-
-# Groq AI API key — get one free at https://console.groq.com
-GROQ_API_KEY=your_groq_api_key_here
-
-# Optional: OpenAQ API key for live data — https://openaq.org
-OPENAQ_API_KEY=your_openaq_api_key_here
 ```
 
-> **Get a free Groq key** → https://console.groq.com → Create API Key. The app will fall back to mock data if the key is missing.
-
----
-
-## Running the Backend
-
-### Step 1 — Start PostgreSQL & Redis via Docker
+### 2 — Start database and cache
 
 ```bash
 cd backend
-docker-compose up -d
+docker compose up -d
 ```
 
-This starts:
-- **PostgreSQL** on port `5432` (database: `vayu`, user: `vayu`, password: `vayu123`)
-- **Redis** on port `6379`
+This starts PostgreSQL on port `5432` and Redis on port `6379`.
 
-Verify they're running:
-```bash
-docker ps
-```
-
-### Step 2 — Create and activate a Python virtual environment
+### 3 — Install and run the backend
 
 ```bash
-# Windows
+# Still in backend/
 python -m venv venv
+
+# Windows
 venv\Scripts\activate
-
 # macOS / Linux
-python3 -m venv venv
 source venv/bin/activate
-```
 
-### Step 3 — Install Python dependencies
-
-```bash
 pip install -r requirements.txt
-```
-
-### Step 4 — Run database migrations / seed data
-
-```bash
-# The app auto-creates tables on first startup via SQLAlchemy.
-# To seed historical AQI data for Chennai wards, run:
-python -m app.services.seed_historical
-```
-
-### Step 5 — Start the FastAPI server
-
-```bash
 uvicorn main:app --reload --port 8000
 ```
 
-The API will be live at: **http://localhost:8000**
+API is now live at `http://localhost:8000`
+Interactive docs: `http://localhost:8000/docs`
 
-Interactive API docs (Swagger UI): **http://localhost:8000/docs**
-
----
-
-## Running the Frontend
-
-Open a **new terminal** (keep the backend running).
-
-### Step 1 — Install dependencies
+### 4 — Install and run the frontend
 
 ```bash
+# New terminal
 cd frontend
 npm install
-```
-
-### Step 2 — Start the Vite dev server
-
-```bash
 npm run dev
 ```
 
-The app will open at: **http://localhost:5173**
+Open `http://localhost:5173`
 
-> The frontend expects the backend at `http://localhost:8000`. If you change the backend port, update the `API` constant at the top of `src/App.jsx`.
+## Pages
 
----
+| Route | Description |
+|---|---|
+| `/` | Landing page — overview, live ticker, entry buttons |
+| `/dashboard` | Main map with station markers, forecast, attribution, AI chat |
+| `/advisories` | Generate AI health advisory per station in English or Tamil |
+| `/compare` | Compare up to 5 stations on a single 24-hour trend chart |
+| `/enforcement` | Priority inspection queue for authorities |
 
-## Running Both in VS Code (Recommended)
+## AQI Scale (India CPCB)
 
-VS Code lets you run both servers side-by-side using its integrated terminal.
+| AQI Range | Category | Colour |
+|---|---|---|
+| 0–50 | Good | Green |
+| 51–100 | Satisfactory | Lime |
+| 101–200 | Moderate | Amber |
+| 201–300 | Poor | Red |
+| 301–400 | Very Poor | Purple |
+| 401+ | Severe | Dark Red |
 
-### Option A — Split terminals manually
+## Data Sources
 
-1. Open VS Code in the project root
-2. Open the terminal panel (`Ctrl+` `` ` ``)
-3. Click the **+** icon to open a second terminal
-4. In **terminal 1** → run the backend:
-   ```bash
-   cd backend && source venv/bin/activate && uvicorn main:app --reload --port 8000
-   ```
-5. In **terminal 2** → run the frontend:
-   ```bash
-   cd frontend && npm run dev
-   ```
+| Source | Use |
+|---|---|
+| OpenAQ API | Live PM2.5 and AQI for Chennai CPCB + TNPCB stations |
+| WHO Air Quality Guidelines 2021 | RAG knowledge base for advisory generation |
+| CPCB NAQI Standards | AQI scale, category thresholds |
+| TNPCB Chennai historical data | Station-specific model training |
+| Groq — LLaMA 3.3 70B Versatile | LLM inference for advisory + chat |
 
-### Option B — VS Code Tasks (auto-launch both)
+## Deployment Notes
 
-Create `.vscode/tasks.json` in the project root:
+- The frontend is a static Vite SPA — deploy to Vercel, Netlify, or any static host.
+- The backend is a standard ASGI app — deploy to Railway, Render, or a VPS with Gunicorn + Nginx.
+- All API calls use `http://localhost:8000` by default. Set `VITE_API_BASE=https://your-api.domain.com` and replace the API constant in frontend files for production.
+- Groq's free tier supports ~14,400 LLaMA 3.3 70B requests/day — sufficient for advisory generation + chat at city scale.
 
-```json
-{
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Start Backend",
-      "type": "shell",
-      "command": "source venv/bin/activate && uvicorn main:app --reload --port 8000",
-      "options": { "cwd": "${workspaceFolder}/backend" },
-      "group": "build",
-      "presentation": { "panel": "dedicated", "reveal": "always" }
-    },
-    {
-      "label": "Start Frontend",
-      "type": "shell",
-      "command": "npm run dev",
-      "options": { "cwd": "${workspaceFolder}/frontend" },
-      "group": "build",
-      "presentation": { "panel": "dedicated", "reveal": "always" }
-    },
-    {
-      "label": "AeroSense: Start All",
-      "dependsOn": ["Start Backend", "Start Frontend"],
-      "group": { "kind": "build", "isDefault": true }
-    }
-  ]
-}
-```
-
-Then press `Ctrl+Shift+B` to launch both servers at once.
-
----
-
-## Available Pages
-
-| URL | Page |
-|-----|------|
-| `http://localhost:5173/` | Landing page |
-| `http://localhost:5173/dashboard` | Live AQI map + ward detail |
-| `http://localhost:5173/enforcement` | Enforcement intelligence dashboard |
-
----
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/stations` | List all monitoring stations/wards |
-| GET | `/stations/{id}/readings` | Recent AQI readings for a ward |
-| GET | `/forecast/{station_id}` | 72-hour AQI forecast |
-| GET | `/attribution/{station_id}` | AI pollution source attribution |
-| GET | `/enforcement` | Prioritized enforcement actions |
-| POST | `/chat` | RAG AI chatbot (body: `{"message": "..."}`) |
-
-Full interactive docs at **http://localhost:8000/docs**
-
----
-
-## Tech Stack
-
-### Backend
-- **FastAPI** — async Python web framework
-- **SQLAlchemy** — ORM + PostgreSQL
-- **Groq API** (LLaMA 3.3 70B) — source attribution, AI chat
-- **APScheduler** — background data refresh jobs
-- **ChromaDB** — vector store for RAG chatbot
-- **Redis** — response caching
-- **Docker** — local PostgreSQL + Redis
-
-### Frontend
-- **React 19** + **Vite**
-- **React Leaflet** — interactive AQI map
-- **Recharts** — AQI trend charts + forecasts
-- **Axios** — API calls
-- **React Router v7** — client-side routing
-
----
-
-## Stopping Everything
-
-```bash
-# Stop the Vite dev server
-Ctrl+C   (in the frontend terminal)
-
-# Stop the FastAPI server
-Ctrl+C   (in the backend terminal)
-
-# Stop Docker containers (PostgreSQL + Redis)
-cd backend
-docker-compose down
-
-# To also delete the database volume (fresh start)
-docker-compose down -v
-```
-
----
-
-## Common Issues
-
-**`connection refused` on port 5432**
-→ Docker Desktop isn't running, or `docker-compose up -d` wasn't run first.
-
-**`ModuleNotFoundError` on backend startup**
-→ Make sure your virtual environment is activated (`source venv/bin/activate`) before running `pip install` and `uvicorn`.
-
-**Map shows but no ward markers**
-→ The backend may not have seeded data. Run `python -m app.services.seed_historical` from the `backend/` directory.
-
-**CORS error in browser console**
-→ The backend CORS middleware allows all origins by default. If you changed the frontend port, no changes needed on the backend side.
-
-**`GROQ_API_KEY` missing warnings**
-→ AI features (attribution, chat) will return fallback/mock responses. Add the key to `backend/.env` for full AI functionality.
