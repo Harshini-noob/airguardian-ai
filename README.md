@@ -7,7 +7,7 @@ AeroSense is a full-stack air quality monitoring and advisory platform built for
 | Dashboard | Advisories | Compare | enforcement
 |---|---|---|---|
 | ![Dashboard](./screenshots/dashboard.png) | ![Advisories](./screenshots/advisory.png) | ![Compare](./screenshots/compare.png) | ![Enforcement](./screenshots/enforcement.png)
-| Dark CARTO map with AQI station markers | Station advisory in English or Tamil | 2–5 station AQI trend overlay |
+| Dark CARTO map with AQI station markers | Station advisory in English or Tamil | 2–5 station AQI trend overlay | Priority-ranked stations with source and severity for inspection teams 
 
 ## Features
 
