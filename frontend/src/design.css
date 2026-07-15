@@ -1,0 +1,94 @@
+/* ─── AeroSense Global Design Tokens ─────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-base:       #020817;
+  --bg-surface:    #060f1e;
+  --bg-card:       #080f1c;
+  --bg-raised:     #0d1b2e;
+
+  --border-dim:    rgba(255,255,255,0.06);
+  --border-std:    rgba(255,255,255,0.09);
+  --border-accent: rgba(14,165,233,0.3);
+
+  --sky:           #0ea5e9;
+  --sky-dim:       rgba(14,165,233,0.12);
+  --sky-glow:      rgba(14,165,233,0.25);
+
+  --text-primary:  #e2eaf4;
+  --text-secondary:#64748b;
+  --text-muted:    #1e3a5f;
+
+  --font-display:  'Space Grotesk', system-ui, sans-serif;
+  --font-body:     'Inter', system-ui, sans-serif;
+  --font-mono:     'JetBrains Mono', monospace;
+
+  --radius-sm:     6px;
+  --radius-md:     10px;
+  --radius-lg:     14px;
+
+  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-std:      cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(14,165,233,0.2); border-radius: 2px; }
+
+/* ─── Select / Input resets ─────────────────────────────────────────────── */
+select, input, button { font-family: var(--font-body); }
+select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+option { background: #0d1b2e; color: #e2eaf4; }
+
+/* ─── Keyframes ─────────────────────────────────────────────────────────── */
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 1; }
+}
+
+/* ─── Utility classes ───────────────────────────────────────────────────── */
+.fade-up   { animation: fade-up 0.35s var(--ease-out) both; }
+.glass {
+  background: rgba(8, 15, 28, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-dim);
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-raised) 25%, rgba(14,165,233,0.06) 50%, var(--bg-raised) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: var(--radius-sm);
+}

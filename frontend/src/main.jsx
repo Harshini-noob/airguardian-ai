@@ -1,12 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import './index.css'
-import Landing from './Landing.jsx'
-import App from './App.jsx'
-import EnforcementDashboard from './EnforcementDashboard.jsx'
-import Advisories from './Advisories.jsx'
-import Compare from './Compare.jsx'
+import './design.css'
+import Landing              from './Landing'
+import App                  from './App'
+import Advisories           from './Advisories'
+import Compare              from './Compare'
+import EnforcementDashboard from './EnforcementDashboard'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -14,9 +14,9 @@ createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/"            element={<Landing />} />
         <Route path="/dashboard"   element={<App />} />
-        <Route path="/enforcement" element={<EnforcementDashboard />} />
         <Route path="/advisories"  element={<Advisories />} />
         <Route path="/compare"     element={<Compare />} />
+        <Route path="/enforcement" element={<EnforcementDashboard />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

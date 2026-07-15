@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer, AreaChart, Area } from 'recharts'
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
+import { AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import 'leaflet/dist/leaflet.css'
@@ -8,297 +8,237 @@ import './App.css'
 
 const API = 'http://localhost:8000'
 
-const AQI_COLOR = (aqi) => {
-  if (aqi <= 50)  return '#10b981'
-  if (aqi <= 100) return '#84cc16'
-  if (aqi <= 200) return '#f59e0b'
-  if (aqi <= 300) return '#ef4444'
-  if (aqi <= 400) return '#8b5cf6'
-  return '#7e0023'
-}
+const AQI_COLOR = (v) => v<=50?'#10b981':v<=100?'#84cc16':v<=200?'#f59e0b':v<=300?'#ef4444':v<=400?'#8b5cf6':'#be185d'
+const AQI_LABEL = (v) => v<=50?'Good':v<=100?'Satisfactory':v<=200?'Moderate':v<=300?'Poor':v<=400?'Very Poor':'Severe'
+const shortName = (n) => n?.replace(/,\s*Chennai\s*-\s*(CPCB|TNPCB)/,'').trim()
 
-const AQI_LABEL = (aqi) => {
-  if (aqi <= 50)  return 'Good'
-  if (aqi <= 100) return 'Satisfactory'
-  if (aqi <= 200) return 'Moderate'
-  if (aqi <= 300) return 'Poor'
-  if (aqi <= 400) return 'Very Poor'
-  return 'Severe'
-}
+const SOURCE_COLORS = { Industrial:'#f43f5e', Traffic:'#f59e0b', Construction:'#0ea5e9', 'Dust/Natural':'#64748b' }
 
-const SOURCE_COLORS = {
-  Industrial:     '#ef4444',
-  Traffic:        '#f59e0b',
-  Construction:   '#0ea5e9',
-  'Dust/Natural': '#64748b',
-}
-
-// ─── Top navigation bar ───────────────────────────────────────────────────────
-
-function TopBar({ stations, onOpenChat, chatOpen }) {
-  const navigate = useNavigate()
-  const worst    = stations.reduce((a, b) => a.aqi > b.aqi ? a : b, { aqi: 0, name: '--' })
-  const avg      = stations.length
-    ? Math.round(stations.reduce((s, x) => s + x.aqi, 0) / stations.length)
-    : '--'
-
-  const navBtn = (label, path, red = false) => (
-    <button key={label} onClick={() => navigate(path)} style={{
-      background: red ? 'rgba(239,68,68,0.08)' : 'none',
-      border: red ? '1px solid rgba(239,68,68,0.2)' : 'none',
-      color: red ? '#ef4444' : '#475569',
-      borderRadius: red ? 5 : 0,
-      padding: red ? '4px 12px' : '0',
-      fontSize: 11, fontWeight: 600,
-      cursor: 'pointer', letterSpacing: '0.06em',
-      fontFamily: 'Inter, sans-serif',
-      transition: 'color 0.15s',
-    }}
-    onMouseOver={e => { if (!red) e.target.style.color = '#94a3b8' }}
-    onMouseOut={e => { if (!red) e.target.style.color = '#475569' }}
-    >
-      {label.toUpperCase()}
-    </button>
+/* ── Custom chart tooltip ── */
+function ChartTip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  const d = payload[0]?.payload
+  return (
+    <div style={{ background:'#0d1b2e',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,padding:'10px 14px',fontSize:12,fontFamily:'Inter,sans-serif' }}>
+      <div style={{ color:'#64748b',marginBottom:4 }}>{label}</div>
+      <div style={{ color:AQI_COLOR(d?.aqi||0),fontFamily:'Space Grotesk,sans-serif',fontWeight:700,fontSize:16 }}>
+        {d?.aqi}
+        <span style={{ color:'#334155',fontSize:11,fontWeight:400,marginLeft:4 }}>AQI</span>
+      </div>
+      {d?.category && <div style={{ color:'#475569',fontSize:11,marginTop:2 }}>{d.category}</div>}
+    </div>
   )
+}
+
+/* ── TopBar ── */
+function TopBar({ stations, chatOpen, onChatToggle }) {
+  const navigate = useNavigate()
+  const avg   = stations.length ? Math.round(stations.reduce((s,x)=>s+x.aqi,0)/stations.length) : null
+  const worst = stations.reduce((a,b)=>a.aqi>b.aqi?a:b,{aqi:0,name:'--'})
 
   return (
     <div style={{
-      position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000,
-      background: 'rgba(5,13,26,0.97)',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
-      display: 'flex', alignItems: 'center', gap: 0,
-      padding: '0 20px', height: 52,
-      fontFamily: 'Inter, system-ui, sans-serif',
-      backdropFilter: 'blur(8px)',
+      position:'absolute',top:0,left:0,right:0,zIndex:1000,height:54,
+      display:'flex',alignItems:'center',padding:'0 20px',gap:0,
+      background:'rgba(2,8,23,0.95)',backdropFilter:'blur(20px)',
+      borderBottom:'1px solid rgba(255,255,255,0.06)',
     }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap');`}</style>
-
       {/* Logo */}
-      <div style={{
-        fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: 15,
-        color: '#f0f4f8', letterSpacing: '-0.01em',
-        paddingRight: 20, borderRight: '1px solid rgba(255,255,255,0.08)',
-        cursor: 'pointer',
-      }} onClick={() => navigate('/')}>
-        AeroSense
-      </div>
+      <div onClick={()=>navigate('/')} style={{
+        fontFamily:'Space Grotesk,sans-serif',fontWeight:700,fontSize:15,
+        background:'linear-gradient(135deg,#e2eaf4 30%,#0ea5e9)',
+        WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
+        cursor:'pointer',letterSpacing:'-0.02em',paddingRight:20,
+        borderRight:'1px solid rgba(255,255,255,0.07)',
+      }}>AeroSense</div>
 
       {/* City avg */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '0 18px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: AQI_COLOR(avg), boxShadow: `0 0 6px ${AQI_COLOR(avg)}` }}/>
-        <span style={{ color: '#475569', fontSize: 12 }}>City avg</span>
-        <span style={{ fontFamily: 'Space Grotesk, sans-serif', color: AQI_COLOR(avg), fontSize: 13, fontWeight: 700 }}>{avg}</span>
-      </div>
+      {avg && (
+        <div style={{ display:'flex',alignItems:'center',gap:8,padding:'0 18px',borderRight:'1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ width:7,height:7,borderRadius:'50%',background:AQI_COLOR(avg),boxShadow:`0 0 10px ${AQI_COLOR(avg)}90`,display:'inline-block' }}/>
+          <span style={{ color:'#334155',fontSize:11 }}>City avg</span>
+          <span style={{ fontFamily:'Space Grotesk,sans-serif',color:AQI_COLOR(avg),fontSize:14,fontWeight:700,letterSpacing:'-0.01em' }}>{avg}</span>
+        </div>
+      )}
 
       {/* Worst */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '0 18px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-        <span style={{ color: '#475569', fontSize: 12 }}>Worst</span>
-        <span style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#f59e0b', fontSize: 12, fontWeight: 600 }}>
-          {worst.name?.replace(', Chennai - CPCB', '')?.replace(', Chennai - TNPCB', '')}
-        </span>
-        <span style={{ fontFamily: 'Space Grotesk, sans-serif', color: AQI_COLOR(worst.aqi), fontSize: 13, fontWeight: 700 }}>
-          {Math.round(worst.aqi)}
-        </span>
+      {worst.aqi > 0 && (
+        <div style={{ display:'flex',alignItems:'center',gap:8,padding:'0 18px',borderRight:'1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ color:'#334155',fontSize:11 }}>Worst</span>
+          <span style={{ color:'#94a3b8',fontSize:11,maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>
+            {shortName(worst.name)}
+          </span>
+          <span style={{ fontFamily:'Space Grotesk,sans-serif',color:AQI_COLOR(worst.aqi),fontSize:13,fontWeight:700 }}>{Math.round(worst.aqi)}</span>
+        </div>
+      )}
+
+      <div style={{ flex:1 }}/>
+
+      {/* Nav */}
+      <div style={{ display:'flex',gap:4,marginRight:12 }}>
+        {[['ADVISORIES','/advisories'],['COMPARE','/compare']].map(([l,p])=>(
+          <button key={l} onClick={()=>navigate(p)} style={{
+            background:'none',border:'none',color:'#334155',fontSize:11,fontWeight:600,
+            cursor:'pointer',letterSpacing:'0.07em',padding:'5px 12px',borderRadius:6,
+            fontFamily:'Inter,sans-serif',transition:'all 0.15s',
+          }}
+          onMouseOver={e=>{e.currentTarget.style.background='rgba(255,255,255,0.05)';e.currentTarget.style.color='#64748b'}}
+          onMouseOut={e=>{e.currentTarget.style.background='none';e.currentTarget.style.color='#334155'}}>
+            {l}
+          </button>
+        ))}
+        <button onClick={()=>navigate('/enforcement')} style={{
+          background:'rgba(244,63,94,0.07)',border:'1px solid rgba(244,63,94,0.18)',
+          color:'#f43f5e',borderRadius:6,padding:'5px 12px',
+          fontSize:11,fontWeight:600,cursor:'pointer',letterSpacing:'0.07em',
+          fontFamily:'Inter,sans-serif',marginRight:8,
+        }}>ENFORCEMENT</button>
       </div>
 
-      <div style={{ flex: 1 }}/>
-
-      {/* Nav links */}
-      <div style={{ display: 'flex', gap: 20, alignItems: 'center', marginRight: 16 }}>
-        {navBtn('Advisories', '/advisories')}
-        {navBtn('Compare', '/compare')}
-        {navBtn('Enforcement', '/enforcement', true)}
-      </div>
-
-      {/* Chat toggle */}
-      <button onClick={onOpenChat} style={{
+      {/* Chat button */}
+      <button onClick={onChatToggle} style={{
         background: chatOpen ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.04)',
-        border: chatOpen ? '1px solid rgba(14,165,233,0.3)' : '1px solid rgba(255,255,255,0.08)',
-        color: chatOpen ? '#0ea5e9' : '#64748b',
-        borderRadius: 6, padding: '5px 14px',
-        fontSize: 11, fontWeight: 600, cursor: 'pointer',
-        letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif',
-        transition: 'all 0.15s',
+        border: chatOpen ? '1px solid rgba(14,165,233,0.35)' : '1px solid rgba(255,255,255,0.08)',
+        color: chatOpen ? '#0ea5e9' : '#475569',
+        borderRadius:6,padding:'5px 16px',fontSize:11,fontWeight:600,cursor:'pointer',
+        letterSpacing:'0.07em',fontFamily:'Inter,sans-serif',transition:'all 0.2s',
       }}>
-        {chatOpen ? 'CLOSE CHAT' : 'AI CHAT'}
+        {chatOpen ? 'CLOSE' : 'AI CHAT'}
       </button>
     </div>
   )
 }
 
-// ─── AQI legend ───────────────────────────────────────────────────────────────
-
+/* ── Legend ── */
 function Legend() {
-  const levels = [
-    ['Good',         '0–50',    '#10b981'],
-    ['Satisfactory', '51–100',  '#84cc16'],
-    ['Moderate',     '101–200', '#f59e0b'],
-    ['Poor',         '201–300', '#ef4444'],
-    ['Very Poor',    '301–400', '#8b5cf6'],
-    ['Severe',       '401+',    '#7e0023'],
-  ]
+  const levels=[['Good','0–50','#10b981'],['Satisfactory','51–100','#84cc16'],['Moderate','101–200','#f59e0b'],['Poor','201–300','#ef4444'],['Very Poor','301–400','#8b5cf6'],['Severe','401+','#be185d']]
   return (
     <div style={{
-      position: 'absolute', bottom: 24, right: 16, zIndex: 1000,
-      background: 'rgba(5,13,26,0.92)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: 8, padding: '14px 16px',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      backdropFilter: 'blur(8px)',
+      position:'absolute',bottom:24,right:20,zIndex:999,
+      background:'rgba(2,8,23,0.88)',backdropFilter:'blur(20px)',
+      border:'1px solid rgba(255,255,255,0.07)',borderRadius:10,
+      padding:'16px 18px',fontFamily:'Inter,sans-serif',
     }}>
-      <div style={{ color: '#334155', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600, marginBottom: 10 }}>
-        India CPCB AQI
-      </div>
-      {levels.map(([label, range, color]) => (
-        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <div style={{ width: 3, height: 12, borderRadius: 1, background: color, flexShrink: 0 }}/>
-          <span style={{ color: '#64748b', fontSize: 11, flex: 1 }}>{label}</span>
-          <span style={{ color: '#334155', fontSize: 10, fontFamily: 'Space Grotesk, sans-serif' }}>{range}</span>
+      <div style={{ color:'#1e3a5f',fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',fontWeight:700,marginBottom:12 }}>INDIA CPCB AQI</div>
+      {levels.map(([l,r,c])=>(
+        <div key={l} style={{ display:'flex',alignItems:'center',gap:9,marginBottom:7 }}>
+          <div style={{ width:3,height:12,borderRadius:2,background:c,flexShrink:0,boxShadow:`0 0 6px ${c}60` }}/>
+          <span style={{ color:'#475569',fontSize:11,flex:1 }}>{l}</span>
+          <span style={{ color:'#1e3a5f',fontSize:10,fontFamily:'JetBrains Mono,monospace' }}>{r}</span>
         </div>
       ))}
     </div>
   )
 }
 
-// ─── Station detail panel (Forecast + Attribution tabs) ───────────────────────
-
+/* ── Station Detail Panel ── */
 function DetailPanel({ station, onClose }) {
-  const [tab, setTab]             = useState('forecast')
-  const [forecast, setForecast]   = useState([])
-  const [attribution, setAttrib]  = useState(null)
-  const [loadingF, setLoadingF]   = useState(true)
-  const [loadingA, setLoadingA]   = useState(false)
+  const [tab,       setTab]       = useState('forecast')
+  const [forecast,  setForecast]  = useState([])
+  const [attrib,    setAttrib]    = useState(null)
+  const [loadingF,  setLoadingF]  = useState(true)
+  const [loadingA,  setLoadingA]  = useState(false)
 
-  useEffect(() => {
+  useEffect(()=>{
     setLoadingF(true)
     axios.get(`${API}/api/forecast/${station.station_id}`)
-      .then(r => {
-        setForecast(r.data.forecast.map(f => ({
-          hour: `+${f.hour}h`, aqi: f.aqi, category: f.category,
-        })))
-      })
-      .catch(() => {})
-      .finally(() => setLoadingF(false))
-  }, [station.station_id])
+      .then(r=>setForecast(r.data.forecast.map(f=>({hour:`+${f.hour}h`,aqi:f.aqi,category:f.category}))))
+      .catch(()=>{})
+      .finally(()=>setLoadingF(false))
+  },[station.station_id])
 
-  useEffect(() => {
-    if (tab !== 'attribution' || attribution) return
+  useEffect(()=>{
+    if(tab!=='attribution'||attrib) return
     setLoadingA(true)
     axios.get(`${API}/api/attribution/${station.station_id}`)
-      .then(r => setAttrib(r.data))
-      .catch(() => {})
-      .finally(() => setLoadingA(false))
-  }, [tab, station.station_id, attribution])
+      .then(r=>setAttrib(r.data)).catch(()=>{}).finally(()=>setLoadingA(false))
+  },[tab,station.station_id,attrib])
 
-  const peak   = forecast.reduce((a, b) => a.aqi > b.aqi ? a : b, { aqi: 0, hour: '' })
-  const rising = peak.aqi > station.aqi
+  const peak    = forecast.reduce((a,b)=>a.aqi>b.aqi?a:b,{aqi:0,hour:''})
+  const rising  = peak.aqi > station.aqi
+  const aColor  = AQI_COLOR(station.aqi)
 
   return (
-    <div style={{
-      position: 'absolute', bottom: 24, left: 24, zIndex: 1000,
-      width: 440,
-      background: 'rgba(5,13,26,0.97)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: 10,
-      fontFamily: 'Inter, system-ui, sans-serif',
-      backdropFilter: 'blur(8px)',
-      overflow: 'hidden',
+    <div className="fade-up" style={{
+      position:'absolute',bottom:24,left:20,zIndex:999,width:460,
+      background:'rgba(6,15,30,0.96)',backdropFilter:'blur(28px)',
+      border:`1px solid rgba(255,255,255,0.08)`,borderRadius:14,
+      overflow:'hidden',boxShadow:'0 24px 60px rgba(0,0,0,0.6)',
     }}>
+      {/* accent stripe */}
+      <div style={{ height:2,background:`linear-gradient(90deg,${aColor},transparent)` }}/>
+
       {/* Header */}
-      <div style={{
-        padding: '16px 20px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'
-      }}>
-        <div>
-          <div style={{
-            fontFamily: 'Space Grotesk, sans-serif',
-            fontSize: 15, fontWeight: 600, color: '#f0f4f8',
-            letterSpacing: '-0.01em', marginBottom: 2
-          }}>
-            {station.station_name?.replace(', Chennai - CPCB', '')?.replace(', Chennai - TNPCB', '')}
+      <div style={{ padding:'18px 22px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start' }}>
+          <div>
+            <div style={{ fontFamily:'Space Grotesk,sans-serif',fontSize:16,fontWeight:700,color:'#e2eaf4',letterSpacing:'-0.02em',marginBottom:4 }}>
+              {shortName(station.station_name)}
+            </div>
+            <div style={{ display:'flex',alignItems:'center',gap:10 }}>
+              <span style={{ color:'#334155',fontSize:11 }}>{station.area}</span>
+              <span style={{ color:aColor,fontSize:13,fontWeight:700,fontFamily:'Space Grotesk,sans-serif' }}>AQI {Math.round(station.aqi)}</span>
+              <span style={{ color:'#334155',fontSize:11 }}>— {station.category}</span>
+            </div>
           </div>
-          <div style={{ color: '#475569', fontSize: 11 }}>
-            {station.area} &nbsp;·&nbsp;
-            <span style={{ color: AQI_COLOR(station.aqi), fontWeight: 600 }}>
-              AQI {Math.round(station.aqi)}
-            </span>
-            &nbsp;— {station.category}
-          </div>
+          <button onClick={onClose} style={{ background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',color:'#475569',width:28,height:28,borderRadius:6,cursor:'pointer',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>×</button>
         </div>
-        <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: '#334155',
-          fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: '2px 6px',
-        }}>×</button>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        {['forecast', 'attribution'].map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
-            flex: 1, padding: '10px 0',
-            background: tab === t ? 'rgba(14,165,233,0.08)' : 'none',
-            border: 'none',
-            borderBottom: tab === t ? '2px solid #0ea5e9' : '2px solid transparent',
-            color: tab === t ? '#0ea5e9' : '#475569',
-            fontSize: 11, fontWeight: 600, cursor: 'pointer',
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-            fontFamily: 'Inter, sans-serif',
-            transition: 'all 0.15s',
+      <div style={{ display:'flex',background:'rgba(0,0,0,0.2)' }}>
+        {['forecast','attribution'].map(t=>(
+          <button key={t} onClick={()=>setTab(t)} style={{
+            flex:1,padding:'11px 0',background:'none',border:'none',
+            borderBottom:`2px solid ${tab===t?'#0ea5e9':'transparent'}`,
+            color:tab===t?'#0ea5e9':'#334155',
+            fontSize:11,fontWeight:700,cursor:'pointer',
+            letterSpacing:'0.08em',textTransform:'uppercase',
+            fontFamily:'Inter,sans-serif',transition:'all 0.15s',
           }}>
-            {t === 'forecast' ? '24-Hour Forecast' : 'Source Attribution'}
+            {t==='forecast'?'24-Hour Forecast':'Source Attribution'}
           </button>
         ))}
       </div>
 
-      {/* Forecast tab */}
-      {tab === 'forecast' && (
+      {/* Forecast */}
+      {tab==='forecast' && (
         <>
-          <div style={{ padding: '16px 20px 0' }}>
-            {loadingF ? (
-              <div style={{ height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155', fontSize: 13 }}>
-                Loading forecast...
-              </div>
-            ) : (
+          <div style={{ padding:'18px 18px 0' }}>
+            {loadingF?(
+              <div style={{ height:140 }} className="skeleton"/>
+            ):(
               <ResponsiveContainer width="100%" height={140}>
-                <AreaChart data={forecast} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                <AreaChart data={forecast} margin={{top:4,right:4,bottom:0,left:0}}>
                   <defs>
-                    <linearGradient id="aqiGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#0ea5e9" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                    <linearGradient id="fg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor={aColor} stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor={aColor} stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="hour" tick={{ fill: '#334155', fontSize: 10 }} interval={5} axisLine={false} tickLine={false}/>
-                  <YAxis domain={[0, Math.max(500, peak.aqi + 50)]} tick={{ fill: '#334155', fontSize: 10 }} width={30} axisLine={false} tickLine={false}/>
-                  <Tooltip
-                    contentStyle={{ background: '#0a1628', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, fontSize: 12 }}
-                    labelStyle={{ color: '#94a3b8' }}
-                    formatter={(val, _, props) => [`${val} — ${props.payload.category}`, 'AQI']}
-                  />
-                  <ReferenceLine y={100} stroke="#84cc16" strokeDasharray="3 3" strokeOpacity={0.3}/>
-                  <ReferenceLine y={200} stroke="#f59e0b" strokeDasharray="3 3" strokeOpacity={0.3}/>
-                  <ReferenceLine y={300} stroke="#ef4444" strokeDasharray="3 3" strokeOpacity={0.3}/>
-                  <Area type="monotone" dataKey="aqi" stroke="#0ea5e9" strokeWidth={1.5} fill="url(#aqiGrad)" dot={false} activeDot={{ r: 4, fill: '#0ea5e9' }}/>
+                  <XAxis dataKey="hour" tick={{fill:'#1e3a5f',fontSize:10}} interval={5} axisLine={false} tickLine={false}/>
+                  <YAxis domain={[0,Math.max(500,peak.aqi+80)]} tick={{fill:'#1e3a5f',fontSize:10}} width={28} axisLine={false} tickLine={false}/>
+                  <Tooltip content={<ChartTip/>}/>
+                  <ReferenceLine y={100} stroke="#84cc16" strokeDasharray="3 3" strokeOpacity={0.25}/>
+                  <ReferenceLine y={200} stroke="#f59e0b" strokeDasharray="3 3" strokeOpacity={0.25}/>
+                  <ReferenceLine y={300} stroke="#ef4444" strokeDasharray="3 3" strokeOpacity={0.25}/>
+                  <Area type="monotone" dataKey="aqi" stroke={aColor} strokeWidth={2} fill="url(#fg)" dot={false} activeDot={{r:4,fill:aColor,strokeWidth:0}}/>
                 </AreaChart>
               </ResponsiveContainer>
             )}
           </div>
+
           {!loadingF && (
-            <div style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1,
-              margin: '12px 0 0',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
-              background: 'rgba(255,255,255,0.03)',
-            }}>
+            <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr',margin:'12px 0 0',borderTop:'1px solid rgba(255,255,255,0.05)' }}>
               {[
-                { label: 'Now',   value: Math.round(station.aqi), color: AQI_COLOR(station.aqi), sub: station.category },
-                { label: 'Peak',  value: Math.round(peak.aqi),    color: AQI_COLOR(peak.aqi),    sub: `at ${peak.hour}` },
-                { label: 'Trend', value: rising ? 'Rising ↑' : 'Falling ↓', color: rising ? '#ef4444' : '#10b981', sub: rising ? 'Limit outdoor activity' : 'Improving' },
-              ].map(({ label, value, color, sub }) => (
-                <div key={label} style={{ padding: '14px 16px' }}>
-                  <div style={{ color: '#334155', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6, fontWeight: 500 }}>{label}</div>
-                  <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 18, fontWeight: 700, color, letterSpacing: '-0.01em' }}>{value}</div>
-                  <div style={{ color: '#475569', fontSize: 10, marginTop: 3 }}>{sub}</div>
+                {label:'Now',  val:Math.round(station.aqi),  color:AQI_COLOR(station.aqi),  sub:station.category},
+                {label:'Peak', val:Math.round(peak.aqi),     color:AQI_COLOR(peak.aqi),     sub:`at ${peak.hour}`},
+                {label:'Trend',val:rising?'Rising ↑':'Falling ↓',color:rising?'#ef4444':'#10b981',sub:rising?'Limit outdoor time':'Improving'},
+              ].map(({label,val,color,sub})=>(
+                <div key={label} style={{ padding:'14px 18px',borderRight:'1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ color:'#1e3a5f',fontSize:9,letterSpacing:'0.1em',textTransform:'uppercase',fontWeight:700,marginBottom:7 }}>{label}</div>
+                  <div style={{ fontFamily:'Space Grotesk,sans-serif',fontSize:17,fontWeight:700,color,letterSpacing:'-0.01em',marginBottom:3 }}>{val}</div>
+                  <div style={{ color:'#334155',fontSize:10 }}>{sub}</div>
                 </div>
               ))}
             </div>
@@ -306,61 +246,48 @@ function DetailPanel({ station, onClose }) {
         </>
       )}
 
-      {/* Attribution tab */}
-      {tab === 'attribution' && (
-        <div style={{ padding: '16px 20px' }}>
+      {/* Attribution */}
+      {tab==='attribution' && (
+        <div style={{ padding:'20px 22px' }}>
           {loadingA ? (
-            <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155', fontSize: 13 }}>
-              Analysing sources...
+            <div style={{ display:'flex',flexDirection:'column',gap:10 }}>
+              {[80,60,40,90].map((w,i)=>(
+                <div key={i} className="skeleton" style={{ height:12,width:`${w}%` }}/>
+              ))}
             </div>
-          ) : attribution ? (
+          ) : attrib ? (
             <>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ color: '#475569', fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
-                  Pollution Source Breakdown
-                </div>
-                {/* Stacked bar */}
-                <div style={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 12, gap: 1 }}>
-                  {Object.entries(attribution.sources).map(([src, pct]) => (
-                    <div key={src} style={{ flex: pct, background: SOURCE_COLORS[src] || '#475569' }}/>
-                  ))}
-                </div>
-                {/* Source rows */}
-                {Object.entries(attribution.sources)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([src, pct]) => (
-                  <div key={src} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                    <div style={{ width: 3, height: 28, borderRadius: 2, background: SOURCE_COLORS[src] || '#475569', flexShrink: 0 }}/>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ color: '#94a3b8', fontSize: 12 }}>{src}</span>
-                        <span style={{ color: SOURCE_COLORS[src] || '#475569', fontSize: 12, fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif' }}>
-                          {Math.round(pct * 100)}%
-                        </span>
-                      </div>
-                      <div style={{ height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 1, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', background: SOURCE_COLORS[src] || '#475569', width: `${pct * 100}%` }}/>
-                      </div>
-                    </div>
-                  </div>
+              {/* Stacked bar */}
+              <div style={{ display:'flex',height:5,borderRadius:3,overflow:'hidden',marginBottom:20,gap:1 }}>
+                {Object.entries(attrib.sources).map(([src,pct])=>(
+                  <div key={src} style={{ flex:pct,background:SOURCE_COLORS[src]||'#475569',boxShadow:`0 0 6px ${SOURCE_COLORS[src]||'#475569'}80` }}/>
                 ))}
               </div>
-              <div style={{
-                borderTop: '1px solid rgba(255,255,255,0.06)',
-                paddingTop: 14, marginTop: 4,
-              }}>
-                <div style={{ color: '#334155', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6, fontWeight: 600 }}>
-                  Recommended Action
+
+              {Object.entries(attrib.sources).sort((a,b)=>b[1]-a[1]).map(([src,pct])=>(
+                <div key={src} style={{ display:'flex',alignItems:'center',gap:12,marginBottom:14 }}>
+                  <div style={{ width:3,height:32,borderRadius:2,background:SOURCE_COLORS[src]||'#475569',flexShrink:0 }}/>
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:'flex',justifyContent:'space-between',marginBottom:5 }}>
+                      <span style={{ color:'#94a3b8',fontSize:12 }}>{src}</span>
+                      <span style={{ fontFamily:'Space Grotesk,sans-serif',color:SOURCE_COLORS[src]||'#475569',fontSize:13,fontWeight:700 }}>
+                        {Math.round(pct*100)}%
+                      </span>
+                    </div>
+                    <div style={{ height:2,background:'rgba(255,255,255,0.05)',borderRadius:1,overflow:'hidden' }}>
+                      <div style={{ height:'100%',background:SOURCE_COLORS[src]||'#475569',width:`${pct*100}%`,transition:'width 0.6s var(--ease-out)',boxShadow:`0 0 8px ${SOURCE_COLORS[src]}80` }}/>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ color: '#94a3b8', fontSize: 12, lineHeight: 1.6 }}>
-                  {attribution.enforcement}
-                </div>
+              ))}
+
+              <div style={{ marginTop:16,paddingTop:16,borderTop:'1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ color:'#1e3a5f',fontSize:9,letterSpacing:'0.1em',textTransform:'uppercase',fontWeight:700,marginBottom:8 }}>Recommended Action</div>
+                <div style={{ color:'#64748b',fontSize:12,lineHeight:1.65 }}>{attrib.enforcement}</div>
               </div>
             </>
           ) : (
-            <div style={{ color: '#334155', fontSize: 13, textAlign: 'center', paddingTop: 20 }}>
-              Unable to load attribution data.
-            </div>
+            <div style={{ color:'#1e3a5f',fontSize:13,textAlign:'center',padding:'20px 0' }}>Attribution data unavailable.</div>
           )}
         </div>
       )}
@@ -368,112 +295,85 @@ function DetailPanel({ station, onClose }) {
   )
 }
 
-// ─── AI Chat panel ────────────────────────────────────────────────────────────
-
-function ChatPanel({ onClose }) {
-  const [messages, setMessages] = useState([{
-    role: 'assistant',
-    text: 'Hi! Ask me about air quality at any Chennai station — in English or Tamil.'
-  }])
-  const [input, setInput]     = useState('')
+/* ── Chat Panel ── */
+function ChatPanel() {
+  const [msgs,    setMsgs]    = useState([{role:'assistant',text:'Ask me about air quality at any Chennai station — in English or Tamil.'}])
+  const [input,   setInput]   = useState('')
   const [loading, setLoading] = useState(false)
-  const bottomRef             = useRef(null)
+  const bottomRef = useRef(null)
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:'smooth'}) },[msgs])
 
   const send = async () => {
-    if (!input.trim() || loading) return
-    const userMsg = input.trim()
+    if(!input.trim()||loading) return
+    const msg = input.trim()
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', text: userMsg }])
+    setMsgs(p=>[...p,{role:'user',text:msg}])
     setLoading(true)
     try {
-      const history = messages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'assistant',
-        content: m.text,
-      }))
-      const r = await axios.post(`${API}/api/chat`, { message: userMsg, history })
-      setMessages(prev => [...prev, {
-        role: 'assistant', text: r.data.reply, sources: r.data.sources_used,
-      }])
+      const history = msgs.map(m=>({role:m.role==='user'?'user':'assistant',content:m.text}))
+      const r = await axios.post(`${API}/api/chat`,{message:msg,history})
+      setMsgs(p=>[...p,{role:'assistant',text:r.data.reply,sources:r.data.sources_used}])
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Unable to reach advisory service.' }])
+      setMsgs(p=>[...p,{role:'assistant',text:'Unable to reach advisory service.'}])
     }
     setLoading(false)
   }
 
   return (
     <div style={{
-      position: 'absolute', top: 52, right: 0, bottom: 0,
-      width: 360, zIndex: 999,
-      background: 'rgba(5,13,26,0.97)',
-      borderLeft: '1px solid rgba(255,255,255,0.06)',
-      display: 'flex', flexDirection: 'column',
-      fontFamily: 'Inter, system-ui, sans-serif',
+      position:'absolute',top:54,right:0,bottom:0,width:360,zIndex:999,
+      background:'rgba(4,10,20,0.97)',backdropFilter:'blur(24px)',
+      borderLeft:'1px solid rgba(255,255,255,0.07)',
+      display:'flex',flexDirection:'column',fontFamily:'Inter,sans-serif',
     }}>
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 13, fontWeight: 600, color: '#f0f4f8', marginBottom: 3 }}>
-          AeroSense AI
+      <div style={{ padding:'18px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display:'flex',alignItems:'center',gap:10,marginBottom:4 }}>
+          <div style={{ width:8,height:8,borderRadius:'50%',background:'#0ea5e9',boxShadow:'0 0 10px #0ea5e9',animation:'glow-pulse 2s infinite' }}/>
+          <span style={{ fontFamily:'Space Grotesk,sans-serif',fontSize:14,fontWeight:700,color:'#e2eaf4' }}>AeroSense AI</span>
         </div>
-        <div style={{ color: '#334155', fontSize: 11 }}>
-          Grounded in WHO · CPCB · TNPCB — English and Tamil
-        </div>
+        <div style={{ color:'#1e3a5f',fontSize:11 }}>WHO · CPCB · TNPCB — English & Tamil</div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {messages.map((m, i) => (
-          <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '88%' }}>
+      <div style={{ flex:1,overflowY:'auto',padding:'16px',display:'flex',flexDirection:'column',gap:12 }}>
+        {msgs.map((m,i)=>(
+          <div key={i} className="fade-up" style={{ alignSelf:m.role==='user'?'flex-end':'flex-start',maxWidth:'88%' }}>
             <div style={{
-              background: m.role === 'user' ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.04)',
-              border: m.role === 'user' ? '1px solid rgba(14,165,233,0.2)' : '1px solid rgba(255,255,255,0.06)',
-              color: '#d1d5db', borderRadius: 8,
-              padding: '9px 13px', fontSize: 13, lineHeight: 1.6,
+              background:m.role==='user'?'rgba(14,165,233,0.12)':'rgba(255,255,255,0.04)',
+              border:m.role==='user'?'1px solid rgba(14,165,233,0.2)':'1px solid rgba(255,255,255,0.07)',
+              color:'#c8d6e8',borderRadius:10,padding:'10px 14px',fontSize:13,lineHeight:1.65,
             }}>
               {m.text}
             </div>
-            {m.sources?.length > 0 && (
-              <div style={{ fontSize: 10, color: '#334155', marginTop: 4, paddingLeft: 2 }}>
-                {m.sources.join(' · ')}
-              </div>
+            {m.sources?.length>0&&(
+              <div style={{ fontSize:10,color:'#1e3a5f',marginTop:5,paddingLeft:2 }}>{m.sources.join(' · ')}</div>
             )}
           </div>
         ))}
-        {loading && (
-          <div style={{
-            alignSelf: 'flex-start',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            color: '#475569', borderRadius: 8,
-            padding: '9px 13px', fontSize: 13,
-          }}>
-            Thinking...
+        {loading&&(
+          <div style={{ alignSelf:'flex-start',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)',color:'#1e3a5f',borderRadius:10,padding:'10px 14px',fontSize:13 }}>
+            <span style={{ animation:'glow-pulse 1s infinite',display:'inline-block' }}>···</span>
           </div>
         )}
         <div ref={bottomRef}/>
       </div>
 
-      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8 }}>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && send()}
+      <div style={{ padding:'12px 16px',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',gap:8 }}>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()}
           placeholder="Ask in English or Tamil..."
           style={{
-            flex: 1, background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 6, padding: '8px 12px',
-            color: '#d1d5db', fontSize: 13, outline: 'none',
-            fontFamily: 'Inter, sans-serif',
+            flex:1,background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',
+            borderRadius:8,padding:'9px 13px',color:'#d1d5db',fontSize:13,outline:'none',
+            fontFamily:'Inter,sans-serif',transition:'border-color 0.15s',
           }}
+          onFocus={e=>e.target.style.borderColor='rgba(14,165,233,0.35)'}
+          onBlur={e=>e.target.style.borderColor='rgba(255,255,255,0.08)'}
         />
         <button onClick={send} disabled={loading} style={{
-          background: loading ? '#0c4a6e' : '#0ea5e9',
-          color: '#fff', border: 'none', borderRadius: 6,
-          padding: '8px 14px', cursor: loading ? 'not-allowed' : 'pointer',
-          fontSize: 12, fontWeight: 600, fontFamily: 'Inter, sans-serif',
-          letterSpacing: '0.04em',
+          background:loading?'#0c4a6e':'linear-gradient(135deg,#0ea5e9,#0284c7)',
+          color:'#fff',border:'none',borderRadius:8,padding:'9px 16px',
+          cursor:loading?'not-allowed':'pointer',fontSize:12,fontWeight:700,
+          fontFamily:'Inter,sans-serif',letterSpacing:'0.05em',flexShrink:0,
         }}>
           SEND
         </button>
@@ -482,129 +382,76 @@ function ChatPanel({ onClose }) {
   )
 }
 
-// ─── Main App ────────────────────────────────────────────────────────────────
-
+/* ═══ Main App ═══════════════════════════════════════════════════════════════ */
 export default function App() {
-  const [stations, setStations]        = useState([])
-  const [selectedStation, setSelected] = useState(null)
-  const [chatOpen, setChatOpen]        = useState(false)
+  const [stations,  setStations] = useState([])
+  const [selected,  setSelected] = useState(null)
+  const [chatOpen,  setChatOpen] = useState(false)
 
   const load = () => {
-    axios.get(`${API}/api/stations`)
-      .then(r => setStations(r.data))
-      .catch(e => console.error('Failed to load stations:', e))
+    axios.get(`${API}/api/stations`).then(r=>setStations(r.data)).catch(()=>{})
   }
 
-  useEffect(() => {
-    load()
-    const interval = setInterval(load, 5 * 60 * 1000)
-    return () => clearInterval(interval)
-  }, [])
+  useEffect(()=>{ load(); const id=setInterval(load,5*60*1000); return()=>clearInterval(id) },[])
 
   return (
-    <div style={{
-      position: 'relative', height: '100vh', width: '100vw',
-      background: '#050d1a', overflow: 'hidden',
-    }}>
-      <TopBar
-        stations={stations}
-        onOpenChat={() => setChatOpen(o => !o)}
-        chatOpen={chatOpen}
-      />
+    <div style={{ position:'relative',height:'100vh',width:'100vw',background:'#020817',overflow:'hidden' }}>
+      <TopBar stations={stations} chatOpen={chatOpen} onChatToggle={()=>{setChatOpen(o=>!o);setSelected(null)}}/>
 
-      {/* Map */}
-      <div style={{
-        position: 'absolute', top: 52, left: 0, bottom: 0,
-        right: chatOpen ? 360 : 0,
-        transition: 'right 0.2s ease',
-      }}>
-        <MapContainer
-          center={[13.0827, 80.2707]}
-          zoom={12}
-          maxBounds={[[12.7, 79.9], [13.5, 80.7]]}
-          maxBoundsViscosity={0.8}
-          style={{ height: '100%', width: '100%' }}
-        >
-          {/* CARTO dark tiles — much better than OSM on dark UI */}
+      <div style={{ position:'absolute',top:54,left:0,bottom:0,right:chatOpen?360:0,transition:'right 0.25s cubic-bezier(0.16,1,0.3,1)' }}>
+        <MapContainer center={[13.0827,80.2707]} zoom={12}
+          maxBounds={[[12.7,79.9],[13.5,80.7]]} maxBoundsViscosity={0.85}
+          style={{ height:'100%',width:'100%' }}>
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             subdomains="abcd"
           />
-          {stations.map(s => (
-            <CircleMarker
-              key={s.openaq_id}
-              center={[s.lat, s.lon]}
-              radius={Math.max(10, s.aqi / 18)}
-              fillColor={AQI_COLOR(s.aqi)}
-              color={AQI_COLOR(s.aqi)}
-              weight={2}
-              fillOpacity={0.85}
-              eventHandlers={{
-                click: () => {
-                  setChatOpen(false)
-                  setSelected({
-                    station_id:   s.id,
-                    station_name: s.name,
-                    area:         s.area,
-                    aqi:          s.aqi,
-                    category:     s.category,
-                  })
-                }
-              }}
-            >
-              <Popup>
-                <div style={{
-                  fontFamily: 'Inter, sans-serif', fontSize: 13,
-                  minWidth: 180, background: '#0a1628',
-                  color: '#f0f4f8', borderRadius: 6, padding: 12,
-                }}>
-                  <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 600, marginBottom: 6 }}>
-                    {s.name.replace(', Chennai - CPCB', '').replace(', Chennai - TNPCB', '')}
+          {stations.map(s=>{
+            const c = AQI_COLOR(s.aqi)
+            const isHigh = s.aqi > 200
+            return (
+              <CircleMarker
+                key={s.openaq_id}
+                center={[s.lat,s.lon]}
+                radius={Math.max(10,s.aqi/20)}
+                fillColor={c}
+                color={c}
+                weight={isHigh?2:1.5}
+                fillOpacity={0.82}
+                eventHandlers={{ click:()=>{ setChatOpen(false); setSelected({ station_id:s.id,station_name:s.name,area:s.area,aqi:s.aqi,category:s.category }) } }}
+              >
+                <Popup>
+                  <div style={{ background:'rgba(6,15,30,0.98)',border:`1px solid ${c}40`,borderRadius:12,padding:16,minWidth:200,fontFamily:'Inter,sans-serif',overflow:'hidden',boxShadow:`0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px ${c}20` }}>
+                    <div style={{ height:2,background:`linear-gradient(90deg,${c},transparent)`,margin:'-16px -16px 12px' }}/>
+                    <div style={{ fontFamily:'Space Grotesk,sans-serif',fontWeight:700,fontSize:14,color:'#e2eaf4',marginBottom:10,letterSpacing:'-0.01em' }}>
+                      {shortName(s.name)}
+                    </div>
+                    <div style={{ fontFamily:'Space Grotesk,sans-serif',fontSize:28,fontWeight:700,color:c,letterSpacing:'-0.03em',lineHeight:1,marginBottom:6 }}>
+                      {Math.round(s.aqi)}
+                      <span style={{ fontSize:13,fontWeight:400,color:'#334155',marginLeft:6 }}>AQI</span>
+                    </div>
+                    <div style={{ color:'#475569',fontSize:12,marginBottom:14 }}>{AQI_LABEL(s.aqi)} · PM2.5 {s.pm25} µg/m³</div>
+                    <button
+                      onClick={()=>setSelected({station_id:s.id,station_name:s.name,area:s.area,aqi:s.aqi,category:s.category})}
+                      style={{ width:'100%',background:`${c}15`,border:`1px solid ${c}35`,color:c,borderRadius:7,padding:'7px 0',fontSize:11,fontWeight:700,cursor:'pointer',letterSpacing:'0.06em',fontFamily:'Inter,sans-serif' }}>
+                      FORECAST + ATTRIBUTION →
+                    </button>
                   </div>
-                  <div style={{
-                    fontFamily: 'Space Grotesk, sans-serif',
-                    fontSize: 22, fontWeight: 700,
-                    color: AQI_COLOR(s.aqi), marginBottom: 4,
-                  }}>
-                    {Math.round(s.aqi)}
-                    <span style={{ fontSize: 12, color: '#475569', marginLeft: 4 }}>AQI</span>
-                  </div>
-                  <div style={{ color: '#64748b', fontSize: 11, marginBottom: 10 }}>
-                    {AQI_LABEL(s.aqi)} · PM2.5 {s.pm25} µg/m³
-                  </div>
-                  <button
-                    onClick={() => setSelected({
-                      station_id: s.id, station_name: s.name,
-                      area: s.area, aqi: s.aqi, category: s.category,
-                    })}
-                    style={{
-                      background: 'rgba(14,165,233,0.1)',
-                      border: '1px solid rgba(14,165,233,0.2)',
-                      color: '#0ea5e9', borderRadius: 4,
-                      padding: '4px 10px', fontSize: 11, cursor: 'pointer',
-                      fontFamily: 'Inter, sans-serif', fontWeight: 500, width: '100%',
-                    }}
-                  >
-                    View forecast & attribution →
-                  </button>
-                </div>
-              </Popup>
-            </CircleMarker>
-          ))}
+                </Popup>
+              </CircleMarker>
+            )
+          })}
         </MapContainer>
 
-        <Legend />
+        <Legend/>
 
-        {selectedStation && (
-          <DetailPanel
-            station={selectedStation}
-            onClose={() => setSelected(null)}
-          />
+        {selected && (
+          <DetailPanel station={selected} onClose={()=>setSelected(null)}/>
         )}
       </div>
 
-      {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
+      {chatOpen && <ChatPanel/>}
     </div>
   )
 }
